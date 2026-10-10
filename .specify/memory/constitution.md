@@ -1,50 +1,199 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+SYNC IMPACT REPORT (material temporal de revisión; eliminar antes de hacer commit)
+
+Cambio de versión: 1.0.0 → 2.0.0
+Tipo de bump: MAJOR. Se elimina la categoría de principios sin excepciones y se retiran reglas
+obligatorias, lo que redefine de forma incompatible la gobernanza (lo que antes era una
+violación ahora puede ser una desviación válida si está justificada en el plan).
+
+Principios modificados:
+- II. Test-First (NO NEGOCIABLE) → II. Test-First
+  - Eliminada la obligación de ejecutar las pruebas en integración continua.
+  - Eliminada la cláusula "sin excepción por urgencia".
+- IV. Privacidad y cero datos sensibles (NO NEGOCIABLE) → IV. Privacidad y cero datos sensibles
+  - Eliminada la obligación de que todo plan declare los datos que maneja y confirme que
+    ninguno es sensible.
+
+Otras secciones modificadas:
+- Flujo de Desarrollo y Quality Gates: el gate 2 ya no menciona integración continua.
+- Governance: eliminada la regla de principios sin excepciones; cualquier principio admite
+  desviaciones justificadas por escrito en el plan.
+
+Secciones añadidas: ninguna.
+Secciones eliminadas: ninguna.
+
+TODOs diferidos: ninguno. No quedan placeholders sin resolver.
+
+Supuestos a confirmar por el responsable del proyecto:
+- Fecha de ratificación tomada como 2026-10-10 (fecha de adopción de este documento).
+- Ubicación de artefactos (docs/adr/, README.md por componente) propuesta como convención;
+  el usuario exigió los artefactos, no sus rutas.
+- Formato de los diagramas C4 no fijado (queda a decidir en el primer ADR).
+-->
+
+# Chiflete Constitution
+
+Chiflete es un proyecto de software de uso público. Esta constitución fija las reglas no
+negociables que gobiernan su diseño, construcción y evolución.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Arquitectura Backend / Frontend guiada por contrato
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+- El sistema se compone de dos componentes desplegables separados: un **backend** y un
+  **frontend**. Ninguno DEBE acceder al código interno, la persistencia o el estado del otro.
+- La única vía de comunicación entre ambos es la API HTTP descrita en el documento OpenAPI.
+- El documento **OpenAPI es la fuente de verdad** del contrato front-back. Todo endpoint DEBE
+  estar definido en OpenAPI antes de implementarse en cualquiera de los dos lados.
+- Un cambio de contrato DEBE modificarse primero en OpenAPI; backend y frontend se ajustan a él,
+  nunca al revés.
+- Los tipos y clientes del frontend, y las interfaces del backend, DEBEN derivarse del documento
+  OpenAPI o verificarse automáticamente contra él. Las definiciones de contrato duplicadas a mano
+  y sin verificación están prohibidas.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+**Justificación**: un contrato único y explícito evita la deriva entre componentes y permite
+desarrollarlos y probarlos de forma independiente.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. Test-First
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+- Todo componente DEBE tener pruebas automatizadas verificables.
+- Las pruebas se escriben **antes** que la implementación: primero la prueba, se comprueba que
+  falla, y solo entonces se implementa (ciclo Rojo → Verde → Refactor).
+- "Verificable" significa que las pruebas se ejecutan con un único comando documentado, sin pasos
+  manuales, y producen un resultado determinista de aprobado o fallido.
+- Un cambio con pruebas fallidas NO PUEDE integrarse.
+- Cada endpoint definido en OpenAPI DEBE tener pruebas de contrato que verifiquen que la
+  implementación cumple el documento.
+- Código sin pruebas que lo respalden se considera incompleto.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Justificación**: en un proyecto de uso público, las pruebas escritas primero son la única
+evidencia objetiva de que el comportamiento es el especificado y de que sigue siéndolo.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### III. Documentación como entregable
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Todo componente y toda decisión de arquitectura DEBEN estar documentados. Una entrega sin su
+documentación está incompleta.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- **README por componente**: cada componente DEBE tener un `README.md` propio que explique su
+  propósito, cómo construirlo, ejecutarlo y probarlo, y su configuración.
+- **ADR de arquitectura**: toda decisión de arquitectura DEBE registrarse en un Architecture
+  Decision Record con contexto, decisión, alternativas consideradas y consecuencias. Los ADR se
+  guardan en `docs/adr/`.
+- **Diagramas C4**: los ADR DEBEN incluir o referenciar diagramas del modelo C4 al nivel que la
+  decisión afecte (contexto, contenedores o componentes). Los diagramas DEBEN mantenerse
+  actualizados cuando la arquitectura cambia.
+- **OpenAPI**: todo endpoint DEBE estar documentado en el documento OpenAPI (ver Principio I).
+- La documentación se actualiza en el mismo cambio que modifica el comportamiento que describe.
+
+**Justificación**: un proyecto público depende de que terceros puedan entenderlo, auditarlo y
+contribuir sin conocimiento tribal.
+
+### IV. Privacidad y cero datos sensibles
+
+El sistema NO DEBE exponer ni almacenar información sensible. Se considera información sensible:
+
+- Claves de API, tokens, secretos y cualquier credencial del sistema.
+- Datos y credenciales de usuario.
+- Cualquier dato que identifique a un usuario, de forma directa o por combinación con otros
+  datos (incluidas direcciones IP).
+
+Reglas:
+
+- Los secretos NO DEBEN aparecer en el repositorio, en el código fuente, en artefactos de build,
+  en bundles o respuestas enviadas al cliente, ni en logs. Se suministran exclusivamente por
+  configuración externa en tiempo de ejecución.
+- El frontend NO DEBE contener ni recibir claves de API de servicios de terceros; las llamadas
+  que las requieran se realizan desde el backend.
+- NO se persisten datos que identifiquen a un usuario. Toda funcionalidad que parezca requerirlo
+  DEBE justificarse en un ADR y resolverse sin almacenar el identificador.
+- Las respuestas de error NO DEBEN revelar detalles internos (trazas, rutas, configuración).
+
+**Justificación**: los datos que no se recolectan ni almacenan no pueden filtrarse. Es la
+garantía de privacidad más sólida que un proyecto público puede ofrecer.
+
+### V. Observabilidad desde el inicio
+
+- Las estrategias de observabilidad y logging DEBEN existir desde la primera funcionalidad; no
+  son trabajo posterior.
+- Todo componente DEBE emitir logs estructurados y exponer la información necesaria para
+  diagnosticar su salud y su comportamiento en ejecución.
+- Todo plan de funcionalidad DEBE indicar qué se registra y qué se mide.
+- Los logs, métricas y trazas NO DEBEN contener direcciones IP, datos de usuario ni ningún dato
+  sensible según el Principio IV.
+- SÍ se permite registrar datos operativos o de contexto, como la ubicación, siempre que no
+  identifiquen a un usuario ni permitan vincular el registro a un usuario concreto.
+- Las reglas de exclusión de datos sensibles en logs DEBEN verificarse con pruebas automatizadas.
+
+**Justificación**: un sistema público que no se puede observar no se puede operar; y una
+observabilidad que filtra datos de usuario viola el Principio IV.
+
+### VI. Simplicidad justificada
+
+- NO se agregan dependencias, capas ni abstracciones sin una justificación escrita en el plan de
+  la funcionalidad.
+- La justificación DEBE indicar el problema concreto que resuelve y por qué la alternativa más
+  simple no es suficiente.
+- Lo que no esté justificado en el plan NO se incorpora durante la implementación; si surge la
+  necesidad, primero se actualiza el plan.
+- No se construye para necesidades hipotéticas futuras (YAGNI).
+
+**Justificación**: cada dependencia o capa aumenta la superficie de mantenimiento, de seguridad
+y de comprensión. La complejidad debe ganarse su lugar.
+
+## Stack Tecnológico y Restricciones
+
+El stack del proyecto es fijo:
+
+| Componente | Tecnología |
+|------------|------------|
+| Backend | Java 25, Spring Boot 4 |
+| Frontend | Next.js 16, React 19, TypeScript en modo `strict`, Tailwind |
+| Contrato front-back | OpenAPI (fuente de verdad) |
+
+Restricciones:
+
+- TypeScript DEBE compilar con `strict` habilitado. Está prohibido desactivarlo total o
+  parcialmente, así como evadir el sistema de tipos para silenciar errores.
+- Cambiar una tecnología o versión mayor de este stack es una enmienda a esta constitución
+  (ver Governance) y requiere un ADR.
+- Incorporar cualquier tecnología adicional está sujeto al Principio VI.
+
+## Flujo de Desarrollo y Quality Gates
+
+Todo cambio DEBE cumplir estas condiciones antes de integrarse:
+
+1. **Contrato primero**: si el cambio toca la API, el documento OpenAPI se actualizó antes que
+   las implementaciones (Principio I).
+2. **Pruebas primero**: las pruebas se escribieron antes de la implementación y pasan
+   (Principio II).
+3. **Documentación al día**: README, ADR, diagramas C4 y OpenAPI afectados se actualizaron en el
+   mismo cambio (Principio III).
+4. **Sin datos sensibles**: el cambio no introduce secretos en el repositorio ni expone, almacena
+   o registra datos sensibles (Principios IV y V).
+5. **Observabilidad incluida**: la funcionalidad nueva emite logs y señales según lo declarado en
+   su plan (Principio V).
+6. **Complejidad justificada**: toda dependencia, capa o abstracción nueva aparece justificada en
+   el plan (Principio VI).
+
+El plan de cada funcionalidad DEBE incluir una verificación explícita contra estos principios
+antes de iniciar el diseño y nuevamente antes de la implementación. Toda desviación DEBE quedar
+registrada en el plan junto con su justificación.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- Esta constitución prevalece sobre cualquier otra práctica, guía o convención del proyecto. En
+  caso de conflicto, se cumple la constitución.
+- **Enmiendas**: toda enmienda DEBE proponerse por escrito, indicando el cambio, su motivación y
+  su impacto sobre el código y los artefactos existentes. Si afecta a trabajo ya realizado, DEBE
+  incluir un plan de migración. La enmienda entra en vigor al ser aprobada por el responsable del
+  proyecto y registrada en este documento.
+- **Versionado**: la constitución usa versionado semántico.
+  - MAJOR: eliminación o redefinición incompatible de un principio o regla de gobernanza.
+  - MINOR: nuevo principio o sección, o ampliación material de una guía existente.
+  - PATCH: aclaraciones, redacción y correcciones sin cambio de significado.
+- **Cumplimiento**: toda revisión de cambios DEBE verificar el cumplimiento de estos principios.
+  Los quality gates de la sección anterior son el mecanismo de verificación.
+- Las desviaciones de cualquier principio solo son válidas si están justificadas por escrito en
+  el plan de la funcionalidad.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-10-10 | **Last Amended**: 2026-10-10
