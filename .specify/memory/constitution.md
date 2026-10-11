@@ -1,40 +1,41 @@
 <!--
 SYNC IMPACT REPORT (material temporal de revisión; eliminar antes de hacer commit)
 
-Cambio de versión: 1.0.0 → 2.0.0
-Tipo de bump: MAJOR. Se elimina la categoría de principios sin excepciones y se retiran reglas
-obligatorias, lo que redefine de forma incompatible la gobernanza (lo que antes era una
-violación ahora puede ser una desviación válida si está justificada en el plan).
+Cambio de versión: 1.0.0 → 1.1.0
+Tipo de bump: MINOR. Se añaden tres principios nuevos y sus quality gates; no se elimina ni se
+redefine ninguna regla existente.
 
-Principios modificados:
-- II. Test-First (NO NEGOCIABLE) → II. Test-First
-  - Eliminada la obligación de ejecutar las pruebas en integración continua.
-  - Eliminada la cláusula "sin excepción por urgencia".
-- IV. Privacidad y cero datos sensibles (NO NEGOCIABLE) → IV. Privacidad y cero datos sensibles
-  - Eliminada la obligación de que todo plan declare los datos que maneja y confirme que
-    ninguno es sensible.
+Principios modificados: ninguno.
+
+Secciones añadidas:
+- Core Principles
+  - VII. Web mobile-first
+  - VIII. Internacionalización (i18n)
+  - IX. Sistema de medida global
+- Flujo de Desarrollo y Quality Gates: gates 7, 8 y 9 (uno por cada principio nuevo).
 
 Otras secciones modificadas:
-- Flujo de Desarrollo y Quality Gates: el gate 2 ya no menciona integración continua.
-- Governance: eliminada la regla de principios sin excepciones; cualquier principio admite
-  desviaciones justificadas por escrito en el plan.
+- Introducción: "reglas no negociables" → "reglas", para ser coherente con la eliminación de las
+  marcas NO NEGOCIABLE hecha en la versión 1.0.0.
 
-Secciones añadidas: ninguna.
 Secciones eliminadas: ninguna.
 
 TODOs diferidos: ninguno. No quedan placeholders sin resolver.
 
 Supuestos a confirmar por el responsable del proyecto:
-- Fecha de ratificación tomada como 2026-10-10 (fecha de adopción de este documento).
-- Ubicación de artefactos (docs/adr/, README.md por componente) propuesta como convención;
-  el usuario exigió los artefactos, no sus rutas.
-- Formato de los diagramas C4 no fijado (queda a decidir en el primer ADR).
+- Tamaño mínimo de objetivo táctil fijado en 44 × 44 px CSS. El usuario pidió "tamaño pulsable
+  en una pantalla móvil" sin dar una cifra; se eligió un valor para que la regla sea verificable.
+- Principio IX: "podrá ser modificable en alguna feature" se interpretó como que una
+  funcionalidad puede cambiar cuál es el sistema global (por defecto, el métrico), no como que
+  una funcionalidad pueda usar unidades distintas a las del resto de la aplicación.
+- El Principio VIII se aplica al texto visible para el usuario; se excluyen logs, identificadores
+  y claves técnicas.
 -->
 
 # Chiflete Constitution
 
-Chiflete es un proyecto de software de uso público. Esta constitución fija las reglas no
-negociables que gobiernan su diseño, construcción y evolución.
+Chiflete es un proyecto de software de uso público. Esta constitución fija las reglas que
+gobiernan su diseño, construcción y evolución.
 
 ## Core Principles
 
@@ -140,6 +141,45 @@ observabilidad que filtra datos de usuario viola el Principio IV.
 **Justificación**: cada dependencia o capa aumenta la superficie de mantenimiento, de seguridad
 y de comprensión. La complejidad debe ganarse su lugar.
 
+### VII. Web mobile-first
+
+- Chiflete es una aplicación web **mobile-first**: toda pantalla se diseña y se implementa primero
+  para móvil, y después se adapta a anchos mayores.
+- El ancho mínimo soportado es de **320 px**. Toda pantalla DEBE ser plenamente utilizable a ese
+  ancho.
+- Ninguna pantalla DEBE producir scroll horizontal de página en ningún ancho igual o superior a
+  320 px.
+- Todo elemento interactivo DEBE tener un objetivo táctil de tamaño pulsable en una pantalla
+  móvil: como mínimo 44 × 44 px CSS.
+
+**Justificación**: el móvil es el contexto de uso principal; lo que funciona en la pantalla más
+pequeña soportada escala hacia arriba, y no al revés.
+
+### VIII. Internacionalización (i18n)
+
+- Ningún texto visible para el usuario DEBE estar escrito directamente en el código. Todo texto
+  DEBE provenir de un catálogo de mensajes.
+- La regla cubre etiquetas, mensajes, errores, textos alternativos y cualquier otro texto que el
+  usuario pueda leer o escuchar, en cualquier componente que lo origine.
+- Añadir o cambiar un texto DEBE hacerse en el catálogo, no en el código que lo muestra.
+- Quedan fuera de esta regla los logs, los identificadores y las claves técnicas.
+
+**Justificación**: un proyecto de uso público debe poder traducirse sin tocar el código; el texto
+incrustado lo impide.
+
+### IX. Sistema de medida global
+
+- El sistema de medida global del proyecto es el **sistema métrico**. Toda unidad de medida, en
+  cualquier componente, DEBE respetar el sistema de medida global definido.
+- Una funcionalidad PUEDE hacer modificable el sistema de medida global. En ese caso, toda
+  unidad de medida DEBE respetar el sistema que esté definido a nivel global en ese momento.
+- Ninguna funcionalidad DEBE introducir unidades o conversiones propias al margen del sistema
+  global definido.
+- El documento OpenAPI DEBE indicar la unidad de todo campo que represente una magnitud.
+
+**Justificación**: mezclar unidades entre componentes o funcionalidades produce errores
+silenciosos y datos incomparables.
+
 ## Stack Tecnológico y Restricciones
 
 El stack del proyecto es fijo:
@@ -174,6 +214,12 @@ Todo cambio DEBE cumplir estas condiciones antes de integrarse:
    su plan (Principio V).
 6. **Complejidad justificada**: toda dependencia, capa o abstracción nueva aparece justificada en
    el plan (Principio VI).
+7. **Mobile-first**: las pantallas afectadas son utilizables a 320 px de ancho, sin scroll
+   horizontal y con objetivos táctiles del tamaño mínimo (Principio VII).
+8. **Sin texto incrustado**: todo texto visible nuevo o modificado está en el catálogo
+   (Principio VIII).
+9. **Unidades coherentes**: toda unidad de medida respeta el sistema de medida global
+   (Principio IX).
 
 El plan de cada funcionalidad DEBE incluir una verificación explícita contra estos principios
 antes de iniciar el diseño y nuevamente antes de la implementación. Toda desviación DEBE quedar
@@ -196,4 +242,4 @@ registrada en el plan junto con su justificación.
 - Las desviaciones de cualquier principio solo son válidas si están justificadas por escrito en
   el plan de la funcionalidad.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-10 | **Last Amended**: 2026-10-10
+**Version**: 1.1.0 | **Ratified**: 2026-10-10 | **Last Amended**: 2026-10-11
