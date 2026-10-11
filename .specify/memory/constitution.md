@@ -1,37 +1,3 @@
-<!--
-SYNC IMPACT REPORT (material temporal de revisión; eliminar antes de hacer commit)
-
-Cambio de versión: 1.0.0 → 1.1.0
-Tipo de bump: MINOR. Se añaden tres principios nuevos y sus quality gates; no se elimina ni se
-redefine ninguna regla existente.
-
-Principios modificados: ninguno.
-
-Secciones añadidas:
-- Core Principles
-  - VII. Web mobile-first
-  - VIII. Internacionalización (i18n)
-  - IX. Sistema de medida global
-- Flujo de Desarrollo y Quality Gates: gates 7, 8 y 9 (uno por cada principio nuevo).
-
-Otras secciones modificadas:
-- Introducción: "reglas no negociables" → "reglas", para ser coherente con la eliminación de las
-  marcas NO NEGOCIABLE hecha en la versión 1.0.0.
-
-Secciones eliminadas: ninguna.
-
-TODOs diferidos: ninguno. No quedan placeholders sin resolver.
-
-Supuestos a confirmar por el responsable del proyecto:
-- Tamaño mínimo de objetivo táctil fijado en 44 × 44 px CSS. El usuario pidió "tamaño pulsable
-  en una pantalla móvil" sin dar una cifra; se eligió un valor para que la regla sea verificable.
-- Principio IX: "podrá ser modificable en alguna feature" se interpretó como que una
-  funcionalidad puede cambiar cuál es el sistema global (por defecto, el métrico), no como que
-  una funcionalidad pueda usar unidades distintas a las del resto de la aplicación.
-- El Principio VIII se aplica al texto visible para el usuario; se excluyen logs, identificadores
-  y claves técnicas.
--->
-
 # Chiflete Constitution
 
 Chiflete es un proyecto de software de uso público. Esta constitución fija las reglas que
