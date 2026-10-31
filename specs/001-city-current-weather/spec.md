@@ -21,11 +21,34 @@
   muestran igualmente, con su hora de observación y una advertencia visible de que están
   desactualizados.
 - Q: ¿En qué unidad métrica se muestra la velocidad del viento? → A: km/h.
-- Q: ¿Se puede encontrar una ciudad escribiendo su nombre en otro idioma? → A: Sí, por su nombre
-  en español, su nombre local o su nombre en inglés; el resultado se muestra siempre en español
-  cuando exista ese nombre.
+- Q: ¿Se puede encontrar una ciudad escribiendo su nombre en otro idioma? → A: No en esta versión.
+  (Revisado el 2026-10-31 para simplificar: antes se buscaba por nombre en español, local o en
+  inglés. La búsqueda bilingüe queda para una versión posterior.)
 - Q: ¿Se actualizan solos los datos del clima mientras la pantalla está abierta? → A: No; hay un
   botón "Actualizar" junto al clima.
+
+### Session 2026-10-31
+
+- Q: ¿Qué reglas de búsqueda incluye esta primera versión? → A: Solo se ignoran tildes,
+  diacríticos y mayúsculas, y se busca por prefijo. Ignorar signos de puntuación y espacios y la
+  búsqueda bilingüe quedan para una versión posterior.
+- Q: ¿Por qué nombre se busca y se muestra cada ciudad? → A: Por su nombre en español cuando
+  exista ("Londres"); si no existe, por su nombre local. Se busca y se muestra por ese mismo
+  nombre.
+- Q: ¿El prefijo coincide solo con el inicio del nombre completo o también con el de cada
+  palabra? → A: Con el inicio del nombre completo o de cualquiera de sus palabras.
+- Q: Sabiendo que en una versión futura se añadirá el sistema imperial, ¿qué deja preparado esta
+  primera versión? → A: Solo se muestra el sistema métrico y no se implementa ninguna conversión;
+  los datos del clima que entrega el sistema indican explícitamente el sistema de medida en que
+  vienen sus valores, sin mostrar ninguna etiqueta extra en pantalla.
+- Q: Si falla el proveedor al pulsar "Ver más resultados", ¿qué pasa con los resultados ya
+  mostrados? → A: Se conservan; debajo de ellos aparece "Error interno" y el usuario puede volver
+  a pulsar "Ver más resultados" para reintentar.
+- Q: ¿Cuánto se espera al proveedor antes de mostrar "Error interno"? → A: 5 segundos, igual para
+  la búsqueda y para el clima.
+- Q: ¿Qué registra y mide la funcionalidad? → A: Cada operación (búsqueda, más resultados, clima,
+  actualizar) con su resultado y su duración; métricas de volumen, latencia y tasa de error por
+  operación. Del clima se registra la ciudad consultada; el texto de búsqueda nunca se registra.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -93,6 +116,9 @@ pero el recorrido principal funciona para la mayoría de búsquedas.
    **Then** el botón "Ver más resultados" deja de mostrarse.
 5. **Given** el usuario amplió la lista, **When** modifica el texto de búsqueda, **Then** la lista
    vuelve a mostrar los 5 primeros resultados de la nueva búsqueda.
+6. **Given** la lista con resultados y el botón visible, **When** el usuario pulsa "Ver más
+   resultados" y el proveedor falla, **Then** los resultados ya mostrados se conservan, debajo
+   aparece "Error interno" y el botón sigue disponible para reintentar.
 
 ---
 
@@ -139,8 +165,6 @@ valor mostrado.
   texto formado solo por espacios no dispara la búsqueda.
 - **Mayúsculas y caracteres especiales**: "CORDOBA", "cordoba" y "Córdoba" dan las mismas
   coincidencias; lo mismo ocurre con "ñ"/"n" y "ü"/"u".
-- **Nombre en otro idioma**: al escribir "London" el resultado se muestra como "Londres"; el
-  usuario lo reconoce además por la provincia y el país.
 - **Ciudades homónimas**: varias ciudades con el mismo nombre aparecen como resultados distintos,
   diferenciados por provincia y país.
 - **Ciudad sin provincia**: si no existe provincia o división equivalente, el resultado muestra
@@ -181,13 +205,12 @@ valor mostrado.
 - **FR-005a**: Tildes, diacríticos y mayúsculas son lo ÚNICO que la búsqueda ignora. Los signos de
   puntuación y los espacios interiores cuentan tal como se escriben, y no se toleran errores
   ortográficos: "sanjose" no tiene por qué encontrar "San José" ni "cordba" encontrar "Córdoba".
-- **FR-005b**: La búsqueda DEBE encontrar una ciudad por su nombre en español, por su nombre
-  local y por su nombre en inglés ("Londres" y "London" encuentran la misma ciudad). Una misma
-  ciudad NO DEBE aparecer duplicada en la lista por coincidir con varios de sus nombres.
-- **FR-005c**: Los nombres de ciudad, provincia y país DEBEN mostrarse en español cuando ese
-  nombre exista; si no existe, se muestra el nombre local.
+- **FR-005b**: Cada ciudad, provincia y país tiene un único nombre para buscar y mostrar: su
+  nombre en español cuando exista ("Londres") y, si no existe, su nombre local. "London" no
+  tiene por qué encontrar "Londres".
 - **FR-006**: La búsqueda DEBE encontrar ciudades a partir de un nombre incompleto: el texto
-  escrito coincide con el inicio del nombre de la ciudad o de alguna de sus palabras.
+  escrito coincide con el inicio del nombre de la ciudad o de alguna de sus palabras: "san j" y
+  "jose" encuentran "San José"; "ose" no lo encuentra.
 - **FR-007**: Cada resultado DEBE mostrar ciudad, provincia (o división administrativa
   equivalente) y país. La ciudad se muestra en un tamaño mayor; provincia y país, en un tamaño
   menor y un tono más claro.
@@ -195,6 +218,9 @@ valor mostrado.
 - **FR-009**: Cuando existan más coincidencias que las mostradas, el sistema DEBE ofrecer un
   botón "Ver más resultados" que añade hasta 5 resultados más cada vez que se pulsa, conservando
   los ya mostrados. El botón NO DEBE mostrarse cuando no quedan más resultados.
+- **FR-009a**: Si el proveedor falla al cargar más resultados, el sistema DEBE conservar los
+  resultados ya mostrados, mostrar "Error interno" debajo de ellos y mantener el botón "Ver más
+  resultados" para reintentar.
 - **FR-010**: Cuando una búsqueda no tenga coincidencias, la lista DEBE mostrar el mensaje
   "Sin resultados".
 - **FR-011**: El usuario DEBE poder seleccionar un resultado de la lista; al hacerlo, la lista se
@@ -208,6 +234,10 @@ valor mostrado.
 - **FR-013**: Todos los valores DEBEN expresarse en el sistema métrico y mostrarse con su unidad:
   temperatura en °C, precipitación en mm, velocidad del viento en km/h, humedad en %, presión en
   hPa y visibilidad en km. La dirección del viento se muestra como punto cardinal.
+- **FR-013a**: Los datos del clima que entrega el sistema DEBEN indicar explícitamente el sistema
+  de medida en que vienen sus valores (en esta versión, siempre el métrico). La pantalla NO
+  muestra el sistema de medida como texto aparte: cada valor ya lleva su unidad.
+- **FR-013b**: Esta versión NO DEBE incluir conversión a otros sistemas de medida.
 - **FR-014**: El sistema DEBE mostrar la observación más reciente disponible para la ciudad. Una
   observación se considera vigente si no tiene más de 2 horas de antigüedad en el momento de la
   consulta.
@@ -230,9 +260,13 @@ valor mostrado.
 **Errores y estados**
 
 - **FR-021**: Si el proveedor de datos no está disponible o falla durante una búsqueda, el
-  sistema DEBE mostrar el mensaje "Error interno" y NO DEBE mostrar resultados.
+  sistema DEBE mostrar el mensaje "Error interno" y NO DEBE mostrar resultados. La única
+  excepción es el fallo al cargar más resultados (FR-009a).
 - **FR-022**: Si el proveedor de datos no está disponible o falla al obtener el clima, el sistema
   DEBE mostrar el mensaje "Error interno" y NO DEBE mostrar datos de clima.
+- **FR-022a**: Si el proveedor no responde en 5 segundos, la operación (búsqueda, carga de más
+  resultados, obtención o actualización del clima) DEBE tratarse como fallo del proveedor y
+  aplicar FR-009a, FR-021 o FR-022 según corresponda.
 - **FR-023**: Los mensajes de error NO DEBEN revelar detalles técnicos ni el nombre del proveedor.
 - **FR-024**: Tras un error, el usuario DEBE poder reintentar repitiendo la búsqueda, la
   selección o la actualización, sin recargar la aplicación.
@@ -247,6 +281,15 @@ valor mostrado.
 - **FR-027**: El sistema NO DEBE solicitar ni utilizar la ubicación del usuario.
 - **FR-028**: Los registros operativos PUEDEN incluir la ciudad consultada, pero NO DEBEN
   contener ningún dato que identifique al usuario ni que permita vincular una consulta con él.
+- **FR-028a**: El sistema DEBE registrar cada operación (búsqueda, carga de más resultados,
+  obtención del clima y actualización) con su tipo, su resultado (éxito, sin resultados, error
+  del proveedor o tiempo agotado) y su duración. En las operaciones de clima se registra además la
+  ciudad consultada.
+- **FR-028b**: El texto escrito por el usuario en la búsqueda NUNCA DEBE aparecer en registros ni
+  métricas.
+- **FR-028c**: El sistema DEBE medir, por tipo de operación, el número de operaciones, su latencia
+  y su tasa de error, de forma que puedan comprobarse SC-002, SC-003 y la disponibilidad del
+  proveedor.
 
 **Presentación**
 
@@ -259,14 +302,14 @@ valor mostrado.
 ### Key Entities
 
 - **Ciudad**: lugar que el usuario puede buscar y seleccionar. Se identifica ante el usuario por
-  su nombre, su provincia o división equivalente (puede faltar) y su país. Puede tener
-  varios nombres (en español, local, en inglés) por los que se la encuentra; se muestra uno
-  solo. Varias ciudades pueden compartir nombre.
+  su nombre (en español si existe; si no, el local), su provincia o división equivalente (puede
+  faltar) y su país. Varias ciudades pueden compartir nombre.
 - **Búsqueda**: texto escrito por el usuario y el conjunto ordenado de ciudades que coinciden con
   él, mostrado por tandas de 5. Existe solo mientras el usuario la está usando.
 - **Observación del clima**: medición de las condiciones de una ciudad en un momento concreto.
   Tiene un instante de observación y hasta siete datos (temperatura, precipitación, velocidad y
-  dirección del viento, humedad, presión, visibilidad), cualquiera de los cuales puede faltar.
+  dirección del viento, humedad, presión, visibilidad), cualquiera de los cuales puede faltar,
+  y el sistema de medida en que se expresan esos datos.
   Está vigente durante las 2 horas siguientes a su instante de observación; pasado ese plazo
   está desactualizada y solo se muestra con advertencia.
 
@@ -291,7 +334,8 @@ valor mostrado.
 - **SC-008**: Tras cerrar y volver a abrir la aplicación no queda ningún rastro de búsquedas ni
   ciudades consultadas anteriormente.
 - **SC-009**: En todas las situaciones de fallo del proveedor, el usuario ve "Error interno" y
-  ningún dato parcial ni técnico.
+  ningún dato parcial ni técnico; la única excepción son los resultados ya mostrados cuando falla
+  la carga de más resultados (FR-009a).
 
 ## Assumptions
 
@@ -307,7 +351,7 @@ valor mostrado.
   coincidencia, primero las ciudades más pobladas.
 - **Cobertura**: ciudades de todo el mundo, según las que ofrezca el proveedor.
 - **"Error interno"** se aplica tanto a fallos en la búsqueda de ciudades como a fallos al
-  obtener el clima, e incluye que el proveedor no responda en un tiempo razonable.
+  obtener el clima, e incluye que el proveedor no responda en 5 segundos (FR-022a).
 - **Hora mostrada**: se usa la zona horaria y el formato de fecha y hora del dispositivo del
   usuario; no se muestra la hora local de la ciudad consultada.
 - **Idioma**: la aplicación se entrega en español.
@@ -323,5 +367,9 @@ valor mostrado.
 - Mapas.
 - Cualquier información guardada por o sobre el usuario: favoritos, historial, ciudad
   predeterminada, preferencias.
-- Elección de unidades por parte del usuario (se usa el sistema de medida global: métrico).
+- Búsqueda bilingüe (encontrar una ciudad por su nombre en otro idioma) y búsqueda que ignore
+  signos de puntuación y espacios: se añadirán en una versión posterior.
+- Sistema imperial y cambio de sistema de medida: esta versión usa solo el sistema de medida
+  global, el métrico. La posibilidad de cambiar al sistema imperial se añadirá en una versión
+  posterior, con su propia especificación.
 - Ráfagas de viento.
