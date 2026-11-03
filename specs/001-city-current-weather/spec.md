@@ -36,7 +36,9 @@
   exista ("Londres"); si no existe, por su nombre local. Se busca y se muestra por ese mismo
   nombre.
 - Q: ¿El prefijo coincide solo con el inicio del nombre completo o también con el de cada
-  palabra? → A: Con el inicio del nombre completo o de cualquiera de sus palabras.
+  palabra? → A: Solo con el inicio del nombre completo. (Revisado el 2026-11-03 para que el
+  proveedor de datos lo cumpla sin almacenamiento ni capas adicionales: antes también coincidía
+  con el inicio de cualquiera de sus palabras.)
 - Q: Sabiendo que en una versión futura se añadirá el sistema imperial, ¿qué deja preparado esta
   primera versión? → A: Solo se muestra el sistema métrico y no se implementa ninguna conversión;
   los datos del clima que entrega el sistema indican explícitamente el sistema de medida en que
@@ -49,6 +51,14 @@
 - Q: ¿Qué registra y mide la funcionalidad? → A: Cada operación (búsqueda, más resultados, clima,
   actualizar) con su resultado y su duración; métricas de volumen, latencia y tasa de error por
   operación. Del clima se registra la ciudad consultada; el texto de búsqueda nunca se registra.
+
+### Session 2026-11-03
+
+- Q: ¿Qué es la "observación" del clima que se muestra? → A: El dato actual del proveedor, que
+  procede de un modelo meteorológico con resolución de 15 minutos, no de una medición de
+  estación. Su "hora de observación" es el instante al que corresponde ese dato.
+- Q: ¿Qué periodo cubre la precipitación actual? → A: Los 15 minutos previos al instante de la
+  observación, tal como la informa el proveedor, sin cálculos propios.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -209,8 +219,8 @@ valor mostrado.
   nombre en español cuando exista ("Londres") y, si no existe, su nombre local. "London" no
   tiene por qué encontrar "Londres".
 - **FR-006**: La búsqueda DEBE encontrar ciudades a partir de un nombre incompleto: el texto
-  escrito coincide con el inicio del nombre de la ciudad o de alguna de sus palabras: "san j" y
-  "jose" encuentran "San José"; "ose" no lo encuentra.
+  escrito coincide con el inicio del nombre completo de la ciudad: "san" y "san j" encuentran
+  "San José"; "jose" y "ose" no lo encuentran.
 - **FR-007**: Cada resultado DEBE mostrar ciudad, provincia (o división administrativa
   equivalente) y país. La ciudad se muestra en un tamaño mayor; provincia y país, en un tamaño
   menor y un tono más claro.
@@ -228,9 +238,10 @@ valor mostrado.
 
 **Clima actual**
 
-- **FR-012**: Para la ciudad seleccionada, el sistema DEBE mostrar: temperatura, precipitación,
-  velocidad del viento (velocidad sostenida, sin ráfagas), dirección del viento, humedad
-  relativa, presión atmosférica y visibilidad.
+- **FR-012**: Para la ciudad seleccionada, el sistema DEBE mostrar: temperatura, precipitación
+  (acumulada en los 15 minutos previos al instante de la observación), velocidad del viento
+  (velocidad sostenida, sin ráfagas), dirección del viento, humedad relativa, presión atmosférica
+  y visibilidad, tal como los informa el proveedor.
 - **FR-013**: Todos los valores DEBEN expresarse en el sistema métrico y mostrarse con su unidad:
   temperatura en °C, precipitación en mm, velocidad del viento en km/h, humedad en %, presión en
   hPa y visibilidad en km. La dirección del viento se muestra como punto cardinal.
@@ -306,7 +317,9 @@ valor mostrado.
   faltar) y su país. Varias ciudades pueden compartir nombre.
 - **Búsqueda**: texto escrito por el usuario y el conjunto ordenado de ciudades que coinciden con
   él, mostrado por tandas de 5. Existe solo mientras el usuario la está usando.
-- **Observación del clima**: medición de las condiciones de una ciudad en un momento concreto.
+- **Observación del clima**: dato actual de las condiciones de una ciudad en un momento concreto,
+  tal como lo entrega el proveedor. Procede de un modelo meteorológico con resolución de 15
+  minutos, no de una medición de estación.
   Tiene un instante de observación y hasta siete datos (temperatura, precipitación, velocidad y
   dirección del viento, humedad, presión, visibilidad), cualquiera de los cuales puede faltar,
   y el sistema de medida en que se expresan esos datos.
@@ -340,9 +353,8 @@ valor mostrado.
 ## Assumptions
 
 - **Unidades**: dentro del sistema métrico se usan °C, mm, hPa y km, además de km/h para el
-  viento (confirmado en Clarifications). La precipitación
-  "actual" es la acumulada en la última hora según la informa el proveedor. La dirección del
-  viento se muestra como punto cardinal (N, NE, E…), indicando de dónde viene el viento.
+  viento (confirmado en Clarifications). La dirección del viento se muestra como punto cardinal
+  (N, NE, E…), indicando de dónde viene el viento.
 - **Advertencia de datos desactualizados**: su texto exacto se define en el catálogo de mensajes
   (propuesta: "Datos desactualizados"). Si el proveedor no tiene ninguna observación para la
   ciudad, los siete datos se muestran como "-".
