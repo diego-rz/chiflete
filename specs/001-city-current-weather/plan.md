@@ -73,6 +73,8 @@ objetivo de volumen fijado por el spec.
 |-------------|-----------------------|--------------------------------|
 | `spring-boot-starter-webmvc` | Servidor HTTP y API REST | Requisito del stack |
 | `spring-boot-starter-actuator` | Healthcheck de compose y métricas (FR-028c) | Escribir endpoints de salud y métricas propios sería reinventarlos |
+| `spring-boot-starter-restclient` | `RestClient.Builder` autoconfigurado, `spring.http.clients.*` y métricas `http.client.requests` | En Boot 4 no viene con `webmvc`; configurar el cliente y sus métricas a mano sería reinventarlo (añadido el 2026-11-09, T006/T007) |
+| `jakarta.validation-api` (solo anotaciones) | Compilar los modelos generados, que llevan `@NotNull` aun con `useBeanValidation=false` | Sin ella el código generado no compila; no se añade ningún validador (añadido el 2026-11-09, T006) |
 | `openapi-generator-maven-plugin` (build) | Interfaces del backend derivadas del contrato (Principio I) | Mantener DTOs a mano exigiría verificarlos igualmente |
 | `swagger-request-validator-mockmvc` (test) | Pruebas de contrato por endpoint (Principio II) | Comparar a mano con el YAML no detecta deriva |
 | `openapi-typescript` (dev) | Tipos del frontend derivados del contrato | Tipos escritos a mano violan el Principio I |
@@ -205,6 +207,11 @@ resuelve en la primera tarea que lo use; los detalles están en research.md.
 | Vitest 5 con Next 16 y React 19.3 | R8 |
 | La etiqueta `uri` de `http.client.requests` conserva la plantilla | R10 |
 | Imagen `eclipse-temurin:25-jre` y herramienta disponible en ella para el healthcheck (`curl` o `wget`) | R12 |
+
+Resultados de la fase 2 (2026-11-09): ver la sección "Verificado durante la implementación" de
+`backend/README.md` y `frontend/README.md`. Quedan pendientes los puntos de
+`swagger-request-validator-mockmvc` y de la etiqueta `uri` de `http.client.requests`, que se
+verifican en US1.
 
 ## Complexity Tracking
 

@@ -1,0 +1,275 @@
+openapi: 3.0.3
+info:
+  title: Chiflete API
+  version: 1.0.0
+  description: |
+    Contrato entre el frontend (servidor Next.js) y el backend de Chiflete.
+    Fuente de verdad del contrato front-back (Principio I de la constitución).
+
+    Unidades: todas las magnitudes se expresan en el sistema de medida indicado por
+    `measurementSystem`. En esta versión el único valor es `METRIC`. La unidad de cada campo
+    figura en su descripción y en la extensión `x-unit`.
+servers:
+  - url: http://localhost:8080
+    description: Backend local (solo accesible desde la red interna de docker-compose)
+tags:
+  - name: cities
+  - name: weather
+paths:
+  /api/v1/cities:
+    get:
+      tags: [cities]
+      operationId: searchCities
+      summary: Busca ciudades por prefijo del nombre
+      description: |
+        Coincidencia por inicio del nombre, sin distinguir mayúsculas ni diacríticos.
+        Los nombres se devuelven en español cuando existen; si no, en su forma local.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: Texto buscado. Se recortan los espacios de los extremos; mínimo 3 caracteres.
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            maximum: 99
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 20
+            default: 5
+      responses:
+        '200':
+          description: Página de resultados (puede estar vacía).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CitySearchPage'
+              examples:
+                cordoba:
+                  value:
+                    items:
+                      - { id: 3860259, name: Córdoba, province: Provincia de Córdoba, country: Argentina, latitude: -31.4135, longitude: -64.18105 }
+                      - { id: 2519240, name: Córdoba, province: Andalucía, country: España, latitude: 37.89155, longitude: -4.77275 }
+                    hasMore: true
+                empty:
+                  value:
+                    items: []
+                    hasMore: false
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '502':
+          $ref: '#/components/responses/ProviderUnavailable'
+        '504':
+          $ref: '#/components/responses/ProviderTimeout'
+  /api/v1/current-weather:
+    get:
+      tags: [weather]
+      operationId: getCurrentWeather
+      summary: Clima actual más reciente en unas coordenadas
+      description: |
+        Se consulta con las coordenadas de una ciudad devuelta por la búsqueda. La respuesta no
+        repite la ciudad: el cliente ya la conoce por el resultado elegido.
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          description: Latitud en grados decimales (WGS84). METRIC → °.
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+          x-unit: { METRIC: '°' }
+        - name: longitude
+          in: query
+          required: true
+          description: Longitud en grados decimales (WGS84). METRIC → °.
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+          x-unit: { METRIC: '°' }
+      responses:
+        '200':
+          description: Clima actual. Los datos que el proveedor no informa se omiten.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentWeather'
+              examples:
+                complete:
+                  value:
+                    measurementSystem: METRIC
+                    observedAt: '2026-11-01T02:00:00Z'
+                    stale: false
+                    temperature: 20.8
+                    precipitation: 0.0
+                    windSpeed: 3.6
+                    windDirection: 198
+                    relativeHumidity: 69
+                    pressure: 1010.9
+                    visibility: 49.26
+                partial:
+                  value:
+                    measurementSystem: METRIC
+                    observedAt: '2026-10-31T21:00:00Z'
+                    stale: true
+                    temperature: 18.1
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '502':
+          $ref: '#/components/responses/ProviderUnavailable'
+        '504':
+          $ref: '#/components/responses/ProviderTimeout'
+components:
+  responses:
+    InvalidRequest:
+      description: Parámetros inválidos.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: { code: INVALID_REQUEST }
+    ProviderUnavailable:
+      description: El proveedor de datos no está disponible o respondió con error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: { code: PROVIDER_UNAVAILABLE }
+    ProviderTimeout:
+      description: El proveedor de datos no respondió a tiempo.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: { code: PROVIDER_TIMEOUT }
+  schemas:
+    City:
+      type: object
+      required: [id, name, latitude, longitude]
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador de la ciudad.
+        name:
+          type: string
+          description: Nombre en español si existe; si no, el local.
+        province:
+          type: string
+          description: Provincia o división administrativa equivalente. Se omite si no existe.
+        country:
+          type: string
+          description: País. Se omite si el proveedor no lo informa.
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          description: Latitud de la ciudad en grados decimales (WGS84). METRIC → °.
+          x-unit: { METRIC: '°' }
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          description: Longitud de la ciudad en grados decimales (WGS84). METRIC → °.
+          x-unit: { METRIC: '°' }
+    CitySearchPage:
+      type: object
+      required: [items, hasMore]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/City'
+        hasMore:
+          type: boolean
+          description: Indica si existen más resultados después de esta página.
+    MeasurementSystem:
+      type: string
+      enum: [METRIC]
+      description: Sistema de medida en que se expresan las magnitudes.
+    CurrentWeather:
+      type: object
+      required: [measurementSystem, stale]
+      additionalProperties: false
+      properties:
+        measurementSystem:
+          $ref: '#/components/schemas/MeasurementSystem'
+        observedAt:
+          type: string
+          format: date-time
+          description: Instante (UTC) al que corresponden los datos.
+        stale:
+          type: boolean
+          description: Verdadero si observedAt tiene más de 2 horas de antigüedad en el momento de la consulta.
+        temperature:
+          type: number
+          format: double
+          description: Temperatura del aire a 2 m. METRIC → °C.
+          x-unit: { METRIC: '°C' }
+        precipitation:
+          type: number
+          format: double
+          minimum: 0
+          description: Precipitación acumulada en el intervalo de 15 minutos previo a observedAt. METRIC → mm.
+          x-unit: { METRIC: mm }
+        windSpeed:
+          type: number
+          format: double
+          minimum: 0
+          description: Velocidad sostenida del viento a 10 m, sin ráfagas. METRIC → km/h.
+          x-unit: { METRIC: km/h }
+        windDirection:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 360
+          description: Dirección desde la que sopla el viento, en grados (0 = N, 90 = E).
+          x-unit: { METRIC: '°' }
+        relativeHumidity:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: Humedad relativa a 2 m, en porcentaje.
+          x-unit: { METRIC: '%' }
+        pressure:
+          type: number
+          format: double
+          description: Presión atmosférica reducida al nivel del mar. METRIC → hPa.
+          x-unit: { METRIC: hPa }
+        visibility:
+          type: number
+          format: double
+          minimum: 0
+          description: Visibilidad. METRIC → km.
+          x-unit: { METRIC: km }
+    Error:
+      type: object
+      required: [code]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum: [INVALID_REQUEST, PROVIDER_UNAVAILABLE, PROVIDER_TIMEOUT]

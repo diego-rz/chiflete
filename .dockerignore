@@ -1,0 +1,16 @@
+.git/
+**/node_modules/
+**/.next/
+**/target/
+**/test-results/
+**/playwright-report/
+**/coverage/
+**/*.log*
+**/.env*
+**/Dockerfile*
+.dockerignore
+specs/
+docs/
+.claude/
+.specify/
+frontend/src/lib/api-types.ts

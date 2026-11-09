@@ -80,7 +80,8 @@ docker compose logs backend | tail -n 20
 - No aparecen ni el texto buscado (`cordoba`) ni direcciones IP (FR-028b, Principio V). Puedes
   comprobarlo con `docker compose logs | grep -i cordoba`, que no debe devolver nada.
 - Las métricas se consultan desde dentro de la red de compose:
-  `docker compose exec backend wget -qO- localhost:8080/actuator/metrics/http.server.requests`
+  `docker compose exec frontend wget -qO- http://backend:8080/actuator/metrics/http.server.requests`
+  (la imagen del backend no trae `wget` ni `curl`; la del frontend sí trae `wget`)
   (FR-028c).
 
 ## 6. Contrato
