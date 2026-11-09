@@ -72,3 +72,7 @@ Resultado de los puntos "pendientes de verificar" del plan (2026-11-09):
 | openapi-generator 7.26.0 con Boot 4.1.2 y Jackson 3 | Compila con `useSpringBoot4` y `useJackson3`. Los modelos usan `@NotNull` de `jakarta.validation` aun con `useBeanValidation=false`, así que se añade solo `jakarta.validation-api` (sin validador). Usan `org.springframework.lang.Nullable`, obsoleto en Spring 7: solo produce un aviso de compilación. |
 | `server.error.include-path` | Por defecto `always` en Boot 4.1.2; se fija en `never` (Principio IV). |
 | Imagen `eclipse-temurin:25-jre` | Existe (Ubuntu 26.04, Java 25.0.5). No trae `curl` ni `wget`: el healthcheck usa `bash` y `/dev/tcp`. |
+| Validador de contrato con Spring Framework 7 | `swagger-request-validator-mockmvc` 3.0.0 es una reubicación de `openapi-request-validator-mockmvc` 3.0.0, que se usa directamente (solo en pruebas; trae Jackson 2 y swagger-parser en ámbito de prueba). Funciona con MockMvc de Spring 7 y detecta `null` y propiedades no permitidas. |
+| Etiqueta `uri` de `http.client.requests` | Conserva la plantilla (`/v1/search?name={name}&...`), sin el texto buscado (`SearchPrivacyTest`). |
+| Pares clave-valor de SLF4J en ECS | El formato ECS de Boot 4.1.2 los incluye como campos (`"operation":"SEARCH"`, `"offset":0`, …). |
+| Búsqueda sin tildes ni mayúsculas (SC-004) | Comprobado contra Open-Meteo real: `CORDOBA` y `córdoba` devuelven los mismos 5 identificadores. |

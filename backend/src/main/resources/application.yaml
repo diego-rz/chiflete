@@ -7,6 +7,9 @@ spring:
   threads:
     virtual:
       enabled: true
+  jackson:
+    # Los datos ausentes se omiten de la respuesta, nunca se envían como null (FR-018, contrato).
+    default-property-inclusion: non_null
   http:
     clients:
       # Una sola llamada al proveedor por petición: como mucho ~4 s, antes del límite de 5 s del

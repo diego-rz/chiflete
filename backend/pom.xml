@@ -49,6 +49,13 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Pruebas de contrato: valida peticiones y respuestas de MockMvc contra contract/openapi.yaml. -->
+		<dependency>
+			<groupId>com.atlassian.oai</groupId>
+			<artifactId>openapi-request-validator-mockmvc</artifactId>
+			<version>3.0.0</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

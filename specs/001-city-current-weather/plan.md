@@ -76,7 +76,7 @@ objetivo de volumen fijado por el spec.
 | `spring-boot-starter-restclient` | `RestClient.Builder` autoconfigurado, `spring.http.clients.*` y métricas `http.client.requests` | En Boot 4 no viene con `webmvc`; configurar el cliente y sus métricas a mano sería reinventarlo (añadido el 2026-11-09, T006/T007) |
 | `jakarta.validation-api` (solo anotaciones) | Compilar los modelos generados, que llevan `@NotNull` aun con `useBeanValidation=false` | Sin ella el código generado no compila; no se añade ningún validador (añadido el 2026-11-09, T006) |
 | `openapi-generator-maven-plugin` (build) | Interfaces del backend derivadas del contrato (Principio I) | Mantener DTOs a mano exigiría verificarlos igualmente |
-| `swagger-request-validator-mockmvc` (test) | Pruebas de contrato por endpoint (Principio II) | Comparar a mano con el YAML no detecta deriva |
+| `openapi-request-validator-mockmvc` (test; nuevo nombre de `swagger-request-validator-mockmvc` desde 3.0.0) | Pruebas de contrato por endpoint (Principio II) | Comparar a mano con el YAML no detecta deriva |
 | `openapi-typescript` (dev) | Tipos del frontend derivados del contrato | Tipos escritos a mano violan el Principio I |
 | Tailwind CSS | Estilos mobile-first | Requisito del stack |
 | Vitest + React Testing Library (dev) | Pruebas unitarias y de componentes | Next.js no trae ejecutor de pruebas |
@@ -209,9 +209,9 @@ resuelve en la primera tarea que lo use; los detalles están en research.md.
 | Imagen `eclipse-temurin:25-jre` y herramienta disponible en ella para el healthcheck (`curl` o `wget`) | R12 |
 
 Resultados de la fase 2 (2026-11-09): ver la sección "Verificado durante la implementación" de
-`backend/README.md` y `frontend/README.md`. Quedan pendientes los puntos de
-`swagger-request-validator-mockmvc` y de la etiqueta `uri` de `http.client.requests`, que se
-verifican en US1.
+`backend/README.md` y `frontend/README.md`. Los dos puntos restantes se
+verificaron en US1 (2026-11-09): el validador de contrato funciona con Spring Framework 7 y
+detecta incumplimientos, y la etiqueta `uri` de `http.client.requests` conserva la plantilla.
 
 ## Complexity Tracking
 
