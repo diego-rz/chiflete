@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import ar.chiflete.weather.application.port.in.GetCurrentWeather;
 import ar.chiflete.weather.application.port.out.WeatherProvider;
 import ar.chiflete.weather.domain.CurrentWeather;
+import ar.chiflete.weather.domain.WeatherObservation;
 
 /**
  * Caso de uso del clima actual: una sola llamada al proveedor con las coordenadas de la ciudad.
@@ -30,15 +31,11 @@ public class GetCurrentWeatherService implements GetCurrentWeather {
         if (!(latitude >= -90 && latitude <= 90) || !(longitude >= -180 && longitude <= 180)) {
             throw new IllegalArgumentException("coordinates out of range");
         }
-        long started = System.nanoTime();
-        CurrentWeather weather = CurrentWeather.from(provider.current(latitude, longitude), clock);
-        log.atInfo()
-                .addKeyValue("operation", "CURRENT_WEATHER")
-                .addKeyValue("outcome", "SUCCESS")
-                .addKeyValue("latitude", latitude)
-                .addKeyValue("longitude", longitude)
-                .addKeyValue("durationMs", SearchCitiesService.elapsedMillis(started))
-                .log("Operation completed");
-        return weather;
+        OperationLog operation = OperationLog.start(log, "CURRENT_WEATHER")
+                .with("latitude", latitude)
+                .with("longitude", longitude);
+        WeatherObservation observation = operation.run(() -> provider.current(latitude, longitude));
+        operation.finish("SUCCESS");
+        return CurrentWeather.from(observation, clock);
     }
 }

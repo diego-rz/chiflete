@@ -19,6 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import ar.chiflete.weather.application.port.in.GetCurrentWeather;
 import ar.chiflete.weather.application.port.in.SearchCities;
+import ar.chiflete.weather.application.port.out.ProviderTimeoutException;
+import ar.chiflete.weather.application.port.out.ProviderUnavailableException;
 import ar.chiflete.weather.domain.CurrentWeather;
 import ar.chiflete.weather.domain.MeasurementSystem;
 
@@ -63,6 +65,41 @@ class CurrentWeatherContractTest {
                 .andExpect(openApi().isValid(CitiesContractTest.CONTRACT))
                 .andExpect(content().json("{\"measurementSystem\":\"METRIC\",\"stale\":false}", true))
                 .andExpect(jsonPath("$.observedAt").doesNotExist());
+    }
+
+    @Test
+    void staleObservationIsValid() throws Exception {
+        given(getCurrentWeather.current(anyDouble(), anyDouble())).willReturn(new CurrentWeather(
+                MeasurementSystem.METRIC, Optional.of(Instant.parse("2026-10-31T21:00:00Z")), true,
+                Optional.of(18.1), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty()));
+
+        mvc.perform(get("/api/v1/current-weather").param("latitude", "0").param("longitude", "0"))
+                .andExpect(status().isOk())
+                .andExpect(openApi().isValid(CitiesContractTest.CONTRACT))
+                .andExpect(content().json(
+                        "{\"measurementSystem\":\"METRIC\",\"observedAt\":\"2026-10-31T21:00:00Z\",\"stale\":true,\"temperature\":18.1}",
+                        true));
+    }
+
+    @Test
+    void providerDownReturns502() throws Exception {
+        given(getCurrentWeather.current(anyDouble(), anyDouble())).willThrow(new ProviderUnavailableException());
+
+        mvc.perform(get("/api/v1/current-weather").param("latitude", "0").param("longitude", "0"))
+                .andExpect(status().isBadGateway())
+                .andExpect(openApi().isValid(CitiesContractTest.CONTRACT))
+                .andExpect(content().json("{\"code\":\"PROVIDER_UNAVAILABLE\"}", true));
+    }
+
+    @Test
+    void providerTimeoutReturns504() throws Exception {
+        given(getCurrentWeather.current(anyDouble(), anyDouble())).willThrow(new ProviderTimeoutException());
+
+        mvc.perform(get("/api/v1/current-weather").param("latitude", "0").param("longitude", "0"))
+                .andExpect(status().isGatewayTimeout())
+                .andExpect(openApi().isValid(CitiesContractTest.CONTRACT))
+                .andExpect(content().json("{\"code\":\"PROVIDER_TIMEOUT\"}", true));
     }
 
     @Test

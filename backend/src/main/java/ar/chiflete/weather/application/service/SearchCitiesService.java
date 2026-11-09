@@ -1,7 +1,6 @@
 package ar.chiflete.weather.application.service;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,19 +28,10 @@ public class SearchCitiesService implements SearchCities {
     @Override
     public SearchPage search(String text, int offset, int limit) {
         CitySearchQuery query = CitySearchQuery.of(text, offset, limit);
-        long started = System.nanoTime();
-        List<City> results = catalog.search(query.text(), query.providerCount());
+        OperationLog operation = OperationLog.start(log, "SEARCH").with("offset", query.offset());
+        List<City> results = operation.run(() -> catalog.search(query.text(), query.providerCount()));
         SearchPage page = SearchPage.from(results, query.offset(), query.limit());
-        log.atInfo()
-                .addKeyValue("operation", "SEARCH")
-                .addKeyValue("outcome", page.items().isEmpty() ? "NO_RESULTS" : "SUCCESS")
-                .addKeyValue("offset", query.offset())
-                .addKeyValue("durationMs", elapsedMillis(started))
-                .log("Operation completed");
+        operation.finish(page.items().isEmpty() ? "NO_RESULTS" : "SUCCESS");
         return page;
-    }
-
-    static long elapsedMillis(long startedNanos) {
-        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
     }
 }

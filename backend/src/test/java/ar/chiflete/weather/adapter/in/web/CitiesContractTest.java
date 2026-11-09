@@ -23,6 +23,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import ar.chiflete.weather.application.port.in.GetCurrentWeather;
 import ar.chiflete.weather.application.port.in.SearchCities;
 import ar.chiflete.weather.application.port.out.CityCatalog;
+import ar.chiflete.weather.application.port.out.ProviderTimeoutException;
+import ar.chiflete.weather.application.port.out.ProviderUnavailableException;
 import ar.chiflete.weather.application.service.SearchCitiesService;
 import ar.chiflete.weather.domain.City;
 
@@ -127,6 +129,26 @@ class CitiesContractTest {
                 .andExpect(openApi().isValid(CONTRACT))
                 .andExpect(content().json("{\"code\":\"INVALID_REQUEST\"}", true));
         verifyNoInteractions(catalog);
+    }
+
+    @Test
+    void providerDownReturns502() throws Exception {
+        given(catalog.search("cordoba", 6)).willThrow(new ProviderUnavailableException());
+
+        mvc.perform(get("/api/v1/cities").param("query", "cordoba"))
+                .andExpect(status().isBadGateway())
+                .andExpect(openApi().isValid(CONTRACT))
+                .andExpect(content().json("{\"code\":\"PROVIDER_UNAVAILABLE\"}", true));
+    }
+
+    @Test
+    void providerTimeoutReturns504() throws Exception {
+        given(catalog.search("cordoba", 6)).willThrow(new ProviderTimeoutException());
+
+        mvc.perform(get("/api/v1/cities").param("query", "cordoba"))
+                .andExpect(status().isGatewayTimeout())
+                .andExpect(openApi().isValid(CONTRACT))
+                .andExpect(content().json("{\"code\":\"PROVIDER_TIMEOUT\"}", true));
     }
 
     @Test

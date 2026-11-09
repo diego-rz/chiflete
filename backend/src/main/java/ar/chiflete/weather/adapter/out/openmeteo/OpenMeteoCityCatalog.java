@@ -25,10 +25,10 @@ public class OpenMeteoCityCatalog implements CityCatalog {
 
     @Override
     public List<City> search(String text, int count) {
-        SearchResponse response = client.get()
+        SearchResponse response = ProviderCalls.call(() -> client.get()
                 .uri(SEARCH_URI, text, count)
                 .retrieve()
-                .body(SearchResponse.class);
+                .body(SearchResponse.class));
         if (response == null || response.results() == null) {
             return List.of();
         }

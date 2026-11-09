@@ -58,4 +58,13 @@ describe("GET /api/cities", () => {
     expect(body).toBe('{"code":"INVALID_REQUEST"}');
     expect(body).not.toContain("backend.internal");
   });
+
+  it("si el backend no responde devuelve 504 con el código del contrato", async () => {
+    fetchMock.mockRejectedValue(new DOMException("timed out", "TimeoutError"));
+
+    const response = await GET(new Request("http://localhost:3000/api/cities?query=cordoba"));
+
+    expect(response.status).toBe(504);
+    expect(await response.json()).toEqual({ code: "PROVIDER_TIMEOUT" });
+  });
 });

@@ -33,6 +33,9 @@ const cities = [
   { id: 3837702, name: "San Fernando del Valle de Catamarca", province: "Provincia de Catamarca", country: "Argentina", latitude: -28.46957, longitude: -65.78524 },
   { id: 3109718, name: "San Sebastián", province: "País Vasco", country: "España", latitude: 43.31283, longitude: -1.97499 },
   { id: 3450554, name: "Santa Maria", province: "Rio Grande do Sul", country: "Brasil", latitude: -29.68417, longitude: -53.80694 },
+  // Casos de US3: datos parciales y observación desactualizada.
+  { id: 3833367, name: "Ushuaia", province: "Tierra del Fuego", country: "Argentina", latitude: -54.8, longitude: -68.3 },
+  { id: 6255152, name: "Vostok", country: "Antártida", latitude: -78.46, longitude: 106.84 },
 ] satisfies City[];
 
 const weatherByCityId = new Map<number, CurrentWeather>([
@@ -66,7 +69,38 @@ const weatherByCityId = new Map<number, CurrentWeather>([
       visibility: 12,
     } satisfies CurrentWeather,
   ],
+  [
+    3833367,
+    {
+      measurementSystem: "METRIC",
+      observedAt: "2026-11-01T02:00:00Z",
+      stale: false,
+      temperature: 4.2,
+      precipitation: 0,
+      windSpeed: 0,
+      relativeHumidity: 77,
+      pressure: 998.1,
+    } satisfies CurrentWeather,
+  ],
+  [
+    6255152,
+    {
+      measurementSystem: "METRIC",
+      observedAt: "2026-10-31T18:00:00Z",
+      stale: true,
+      temperature: -52.3,
+      precipitation: 0,
+      windSpeed: 14.8,
+      windDirection: 270,
+      relativeHumidity: 60,
+      pressure: 1002.4,
+      visibility: 10,
+    } satisfies CurrentWeather,
+  ],
 ]);
+
+/** Las búsquedas que empiezan por "error" simulan un proveedor caído. */
+const providerDown = { code: "PROVIDER_UNAVAILABLE" } satisfies components["schemas"]["Error"];
 
 const defaultWeather = { measurementSystem: "METRIC", stale: false } satisfies CurrentWeather;
 
@@ -94,6 +128,9 @@ createServer((req, res) => {
     return json(res, 200, { status: "UP" });
   }
   if (url.pathname === "/api/v1/cities") {
+    if (normalize(params.get("query") ?? "").trim().startsWith("error")) {
+      return json(res, 502, providerDown);
+    }
     const page = search(params.get("query") ?? "", Number(params.get("offset") ?? 0), Number(params.get("limit") ?? 5));
     return json(res, 200, page);
   }

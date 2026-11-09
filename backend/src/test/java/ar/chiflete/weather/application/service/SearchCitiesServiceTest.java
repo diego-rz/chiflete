@@ -2,6 +2,7 @@ package ar.chiflete.weather.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import ar.chiflete.weather.application.port.out.CityCatalog;
+import ar.chiflete.weather.application.port.out.ProviderTimeoutException;
+import ar.chiflete.weather.application.port.out.ProviderUnavailableException;
 import ar.chiflete.weather.domain.City;
 import ar.chiflete.weather.domain.SearchPage;
 
@@ -84,17 +87,37 @@ class SearchCitiesServiceTest {
                 .containsEntry("offset", 5);
     }
 
+    @Test
+    void providerFailuresAreLoggedAndPropagated() {
+        catalog.failure = new ProviderUnavailableException();
+        assertThatThrownBy(() -> service.search("cordoba", 0, 5)).isInstanceOf(ProviderUnavailableException.class);
+
+        catalog.failure = new ProviderTimeoutException();
+        assertThatThrownBy(() -> service.search("cordoba", 5, 5)).isInstanceOf(ProviderTimeoutException.class);
+
+        assertThat(logs.events()).hasSize(2);
+        assertThat(LogCapture.keyValues(logs.events().get(0)))
+                .containsEntry("outcome", "PROVIDER_ERROR").containsEntry("offset", 0).containsKey("durationMs");
+        assertThat(LogCapture.keyValues(logs.events().get(1)))
+                .containsEntry("outcome", "TIMEOUT").containsEntry("offset", 5).containsKey("durationMs");
+        assertThat(logs.events()).allSatisfy(e -> assertThat(LogCapture.fullText(e)).doesNotContain("cordoba"));
+    }
+
     private static List<City> cities(int n) {
         return LongStream.rangeClosed(1, n).mapToObj(i -> new City(i, "Córdoba " + i, null, null, 0, 0)).toList();
     }
 
     static final class FakeCatalog implements CityCatalog {
         List<City> results = List.of();
+        RuntimeException failure;
         final List<String> requests = new ArrayList<>();
 
         @Override
         public List<City> search(String text, int count) {
             requests.add(text + "|" + count);
+            if (failure != null) {
+                throw failure;
+            }
             return results.subList(0, Math.min(count, results.size()));
         }
     }

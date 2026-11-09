@@ -1,3 +1,4 @@
+import { ErrorMessage } from "@/components/ErrorMessage";
 import { t } from "@/i18n/t";
 
 interface Props {
@@ -11,11 +12,7 @@ interface Props {
 export function LoadMoreButton({ onClick, loading, failed }: Props) {
   return (
     <div className="flex flex-col gap-2 p-2">
-      {failed && (
-        <p role="alert" className="px-2 text-sm text-red-700 dark:text-red-400">
-          {t("error.internal")}
-        </p>
-      )}
+      {failed && <ErrorMessage className="px-2" />}
       <button
         type="button"
         onClick={onClick}

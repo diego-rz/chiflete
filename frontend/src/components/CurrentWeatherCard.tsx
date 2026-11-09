@@ -1,6 +1,8 @@
 "use client";
 
 import { cityRegion } from "@/components/CityResultList";
+import { ErrorMessage } from "@/components/ErrorMessage";
+import { StaleWarning } from "@/components/StaleWarning";
 import { type MessageKey, t } from "@/i18n/t";
 import type { components } from "@/lib/api-types";
 import { formatNumber, formatObservedAt, toCardinal } from "@/lib/format";
@@ -10,7 +12,7 @@ type CurrentWeather = components["schemas"]["CurrentWeather"];
 
 interface Props {
   city: City;
-  status: "loading" | "loaded";
+  status: "loading" | "loaded" | "error";
   weather?: CurrentWeather;
   onRefresh: () => void;
 }
@@ -37,7 +39,8 @@ function rows(weather: CurrentWeather): { label: MessageKey; value: string }[] {
 
 /**
  * Clima actual de la ciudad elegida (FR-012 a FR-019). La hora se formatea en el navegador, con la
- * zona horaria del dispositivo (FR-017).
+ * zona horaria del dispositivo (FR-017). Si falla el proveedor, "Error interno" sustituye a los
+ * datos y "Actualizar" permite reintentar (FR-022, FR-024).
  */
 export function CurrentWeatherCard({ city, status, weather, onRefresh }: Props) {
   const region = cityRegion(city);
@@ -48,12 +51,20 @@ export function CurrentWeatherCard({ city, status, weather, onRefresh }: Props) 
       </h2>
       {region !== "" && <p className="text-sm break-words text-neutral-600 dark:text-neutral-400">{region}</p>}
 
-      {status === "loading" || weather === undefined ? (
+      {status === "loading" && (
         <p role="status" className="mt-4 text-neutral-600 dark:text-neutral-400">
           {t("weather.loading")}
         </p>
-      ) : (
+      )}
+      {status === "error" && (
         <>
+          <ErrorMessage className="mt-4" />
+          <RefreshButton onClick={onRefresh} />
+        </>
+      )}
+      {status === "loaded" && weather !== undefined && (
+        <>
+          {weather.stale && <StaleWarning />}
           <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2">
             {rows(weather).map(({ label, value }) => (
               <div key={label} className="contents">
@@ -68,15 +79,21 @@ export function CurrentWeatherCard({ city, status, weather, onRefresh }: Props) 
               </div>
             )}
           </dl>
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="mt-4 min-h-11 min-w-11 w-full rounded-lg border border-neutral-300 px-4 font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-900"
-          >
-            {t("weather.refresh")}
-          </button>
+          <RefreshButton onClick={onRefresh} />
         </>
       )}
     </section>
+  );
+}
+
+function RefreshButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mt-4 min-h-11 min-w-11 w-full rounded-lg border border-neutral-300 px-4 font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-900"
+    >
+      {t("weather.refresh")}
+    </button>
   );
 }

@@ -31,10 +31,10 @@ public class OpenMeteoWeatherProvider implements WeatherProvider {
 
     @Override
     public WeatherObservation current(double latitude, double longitude) {
-        ForecastResponse response = client.get()
+        ForecastResponse response = ProviderCalls.call(() -> client.get()
                 .uri(FORECAST_URI, latitude, longitude)
                 .retrieve()
-                .body(ForecastResponse.class);
+                .body(ForecastResponse.class));
         if (response == null || response.current() == null) {
             return NO_DATA;
         }

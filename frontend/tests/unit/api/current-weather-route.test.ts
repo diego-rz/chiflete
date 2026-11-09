@@ -32,4 +32,13 @@ describe("GET /api/current-weather", () => {
     expect(response.status).toBe(200);
     expect(await response.text()).toBe(weather);
   });
+
+  it("si el backend es inaccesible devuelve 502 con el código del contrato", async () => {
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+
+    const response = await GET(new Request("http://localhost:3000/api/current-weather?latitude=1&longitude=2"));
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({ code: "PROVIDER_UNAVAILABLE" });
+  });
 });

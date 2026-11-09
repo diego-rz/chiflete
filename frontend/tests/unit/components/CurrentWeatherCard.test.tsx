@@ -40,4 +40,50 @@ describe("CurrentWeatherCard", () => {
     expect(screen.queryByText(`20,8 ${t("unit.celsius")}`)).toBeNull();
     expect(screen.queryByRole("button", { name: t("weather.refresh") })).toBeNull();
   });
+
+  it("un dato ausente se muestra como - y el cero como cero con su unidad", () => {
+    const partial = { measurementSystem: "METRIC", observedAt: weather.observedAt, stale: false, windSpeed: 0, precipitation: 0 } as const;
+    render(<CurrentWeatherCard city={cordoba} status="loaded" weather={partial} onRefresh={() => undefined} />);
+
+    expect(screen.getByText(`0 ${t("unit.kmh")}`)).toBeTruthy();
+    expect(screen.getByText(`0 ${t("unit.millimeters")}`)).toBeTruthy();
+    // Temperatura, dirección, humedad, presión y visibilidad ausentes.
+    expect(screen.getAllByText(t("weather.missing"))).toHaveLength(5);
+  });
+
+  it("sin observación los siete datos son - y no se muestra hora", () => {
+    render(
+      <CurrentWeatherCard
+        city={cordoba}
+        status="loaded"
+        weather={{ measurementSystem: "METRIC", stale: false }}
+        onRefresh={() => undefined}
+      />,
+    );
+
+    expect(screen.getAllByText(t("weather.missing"))).toHaveLength(7);
+    expect(screen.queryByText(t("weather.observedAt"))).toBeNull();
+  });
+
+  it("con stale muestra la advertencia junto a los datos y la hora; sin stale no", () => {
+    const { rerender } = render(
+      <CurrentWeatherCard city={cordoba} status="loaded" weather={{ ...weather, stale: true }} onRefresh={() => undefined} />,
+    );
+    expect(screen.getByText(t("weather.stale"))).toBeTruthy();
+    expect(screen.getByText(`20,8 ${t("unit.celsius")}`)).toBeTruthy();
+    expect(screen.getByText(t("weather.observedAt"))).toBeTruthy();
+
+    rerender(<CurrentWeatherCard city={cordoba} status="loaded" weather={weather} onRefresh={() => undefined} />);
+    expect(screen.queryByText(t("weather.stale"))).toBeNull();
+  });
+
+  it("con error muestra Error interno en lugar de los datos y permite reintentar", () => {
+    const onRefresh = vi.fn();
+    render(<CurrentWeatherCard city={cordoba} status="error" onRefresh={onRefresh} />);
+
+    expect(screen.getByRole("alert").textContent).toBe(t("error.internal"));
+    expect(screen.queryByText(t("weather.temperature"))).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: t("weather.refresh") }));
+    expect(onRefresh).toHaveBeenCalledOnce();
+  });
 });

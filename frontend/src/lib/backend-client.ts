@@ -4,8 +4,14 @@
  * - Lee `BACKEND_URL` en cada llamada, en tiempo de ejecución (research R8).
  * - Corta a los 5 s (FR-022a).
  * - Reenvía el estado y el cuerpo del backend sin redefinirlos (Principio I).
+ * - Si el backend no responde a tiempo o es inaccesible, responde como él lo haría ante un fallo
+ *   del proveedor: 504 PROVIDER_TIMEOUT o 502 PROVIDER_UNAVAILABLE, sin detalles (FR-022a, FR-023).
  * - Registra una línea JSON por llamada, sin la query string ni IPs (FR-028a, FR-028b).
  */
+
+import type { components } from "@/lib/api-types";
+
+type ErrorBody = components["schemas"]["Error"];
 
 export const BACKEND_TIMEOUT_MS = 5000;
 
@@ -28,9 +34,17 @@ export async function callBackend(operation: Operation, pathAndQuery: string): P
     if (contentType !== null) headers.set("content-type", contentType);
     return new Response(body, { status: response.status, headers });
   } catch (error) {
-    log(operation, isTimeout(error) ? "TIMEOUT" : "UNAVAILABLE", started);
-    throw error;
+    if (isTimeout(error)) {
+      log(operation, "TIMEOUT", started, 504);
+      return errorResponse(504, { code: "PROVIDER_TIMEOUT" });
+    }
+    log(operation, "UNAVAILABLE", started, 502);
+    return errorResponse(502, { code: "PROVIDER_UNAVAILABLE" });
   }
+}
+
+function errorResponse(status: number, body: ErrorBody): Response {
+  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
 
 function isTimeout(error: unknown): boolean {

@@ -2,6 +2,7 @@ package ar.chiflete.weather.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -13,6 +14,8 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import ar.chiflete.weather.application.port.out.ProviderTimeoutException;
+import ar.chiflete.weather.application.port.out.ProviderUnavailableException;
 import ar.chiflete.weather.application.port.out.WeatherProvider;
 import ar.chiflete.weather.domain.CurrentWeather;
 import ar.chiflete.weather.domain.WeatherObservation;
@@ -64,12 +67,30 @@ class GetCurrentWeatherServiceTest {
         assertThat(provider.requests).isEmpty();
     }
 
+    @Test
+    void providerFailuresAreLoggedAndPropagated() {
+        provider.failure = new ProviderUnavailableException();
+        assertThatThrownBy(() -> service.current(-31.4135, -64.18105)).isInstanceOf(ProviderUnavailableException.class);
+
+        provider.failure = new ProviderTimeoutException();
+        assertThatThrownBy(() -> service.current(-31.4135, -64.18105)).isInstanceOf(ProviderTimeoutException.class);
+
+        assertThat(LogCapture.keyValues(logs.events().get(0)))
+                .containsEntry("operation", "CURRENT_WEATHER").containsEntry("outcome", "PROVIDER_ERROR")
+                .containsEntry("latitude", -31.4135).containsKey("durationMs");
+        assertThat(LogCapture.keyValues(logs.events().get(1))).containsEntry("outcome", "TIMEOUT");
+    }
+
     static final class FakeProvider implements WeatherProvider {
         final List<String> requests = new ArrayList<>();
+        RuntimeException failure;
 
         @Override
         public WeatherObservation current(double latitude, double longitude) {
             requests.add(latitude + "|" + longitude);
+            if (failure != null) {
+                throw failure;
+            }
             return new WeatherObservation(NOW.minusSeconds(900), 20.8, 0.0, 3.6, 198, 69, 1010.9, 49260.0);
         }
     }

@@ -46,6 +46,9 @@ export default function Home() {
       {state.status === "loading" && (
         <CurrentWeatherCard city={state.city} status="loading" onRefresh={() => loadWeather(state.city)} />
       )}
+      {state.status === "error" && (
+        <CurrentWeatherCard city={state.city} status="error" onRefresh={() => loadWeather(state.city)} />
+      )}
       {state.status === "loaded" && (
         <CurrentWeatherCard
           city={state.city}

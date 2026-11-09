@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { CityResultList } from "@/components/CityResultList";
+import { ErrorMessage } from "@/components/ErrorMessage";
 import { t } from "@/i18n/t";
 import type { components } from "@/lib/api-types";
 import { useLatestRequest } from "@/lib/use-latest-request";
@@ -102,6 +103,13 @@ export function CitySearch({ onSelect }: Props) {
           {t("search.loading")}
         </p>
       )}
+      {state.status === "loaded" && state.items.length === 0 && (
+        <p className="rounded-lg border border-neutral-200 px-4 py-3 text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
+          {t("search.noResults")}
+        </p>
+      )}
+      {/* Fallo del proveedor: "Error interno" sin resultados (FR-021); la siguiente búsqueda reintenta. */}
+      {state.status === "error" && <ErrorMessage />}
       {state.status === "loaded" && state.items.length > 0 && (
         <CityResultList
           items={state.items}

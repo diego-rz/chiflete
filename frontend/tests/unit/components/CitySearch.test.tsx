@@ -102,6 +102,60 @@ describe("CitySearch", () => {
     expect(screen.queryByRole("list")).toBeNull();
   });
 
+  describe("sin resultados y errores", () => {
+    it("una búsqueda sin coincidencias muestra Sin resultados", async () => {
+      fetchMock.mockImplementation(async () => jsonResponse({ items: [], hasMore: false }));
+      render(<CitySearch onSelect={() => undefined} />);
+
+      type("xyzqwv");
+      await settle();
+
+      expect(screen.getByText(t("search.noResults"))).toBeTruthy();
+      expect(screen.queryByRole("list")).toBeNull();
+    });
+
+    it("cualquier respuesta no 2xx muestra Error interno y ningún resultado", async () => {
+      for (const status of [400, 500, 502, 504]) {
+        fetchMock.mockImplementation(async () => jsonResponse({ code: "PROVIDER_UNAVAILABLE" }, status));
+        const { unmount } = render(<CitySearch onSelect={() => undefined} />);
+
+        type("cordoba");
+        await settle();
+
+        expect(screen.getByRole("alert").textContent).toBe(t("error.internal"));
+        expect(screen.queryByRole("list")).toBeNull();
+        unmount();
+      }
+    });
+
+    it("una nueva búsqueda tras el error vuelve a intentarlo", async () => {
+      fetchMock.mockImplementationOnce(async () => jsonResponse({ code: "PROVIDER_TIMEOUT" }, 504));
+      fetchMock.mockImplementation(async () => jsonResponse({ items: [cordoba], hasMore: false }));
+      render(<CitySearch onSelect={() => undefined} />);
+
+      type("cordoba");
+      await settle();
+      expect(screen.getByRole("alert")).toBeTruthy();
+
+      type("cordob");
+      await settle();
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(screen.getByRole("list")).toBeTruthy();
+    });
+
+    it("al bajar de 3 caracteres desaparecen los mensajes", async () => {
+      fetchMock.mockImplementation(async () => jsonResponse({ items: [], hasMore: false }));
+      render(<CitySearch onSelect={() => undefined} />);
+
+      type("xyzqwv");
+      await settle();
+      type("xy");
+      await settle();
+
+      expect(screen.queryByText(t("search.noResults"))).toBeNull();
+    });
+  });
+
   describe("Ver más resultados", () => {
     const sanCities = Array.from({ length: 12 }, (_, i) => ({
       id: 100 + i,

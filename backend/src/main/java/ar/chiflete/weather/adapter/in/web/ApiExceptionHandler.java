@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import ar.chiflete.weather.adapter.in.web.model.Error;
 import ar.chiflete.weather.adapter.in.web.model.Error.CodeEnum;
+import ar.chiflete.weather.application.port.out.ProviderTimeoutException;
+import ar.chiflete.weather.application.port.out.ProviderUnavailableException;
 
 /**
  * Traduce las excepciones a las respuestas de error del contrato. Los cuerpos solo llevan
@@ -27,6 +29,16 @@ public class ApiExceptionHandler {
             IllegalArgumentException.class})
     ResponseEntity<Error> invalidRequest(Exception ex) {
         return error(HttpStatus.BAD_REQUEST, CodeEnum.INVALID_REQUEST);
+    }
+
+    @ExceptionHandler(ProviderUnavailableException.class)
+    ResponseEntity<Error> providerUnavailable(ProviderUnavailableException ex) {
+        return error(HttpStatus.BAD_GATEWAY, CodeEnum.PROVIDER_UNAVAILABLE);
+    }
+
+    @ExceptionHandler(ProviderTimeoutException.class)
+    ResponseEntity<Error> providerTimeout(ProviderTimeoutException ex) {
+        return error(HttpStatus.GATEWAY_TIMEOUT, CodeEnum.PROVIDER_TIMEOUT);
     }
 
     @ExceptionHandler(Exception.class)

@@ -79,13 +79,47 @@ describe("callBackend", () => {
     expect(logs[0]).not.toContain("203.0.113.7");
   });
 
-  it("registra el error y lo propaga si el backend no responde", async () => {
+  it("si el backend no responde en 5000 ms devuelve 504 PROVIDER_TIMEOUT y lo registra", async () => {
     vi.stubEnv("BACKEND_URL", "http://backend:8080");
-    fetchMock.mockRejectedValue(new DOMException("timed out", "TimeoutError"));
+    fetchMock.mockRejectedValue(new DOMException("The operation timed out.", "TimeoutError"));
 
-    await expect(callBackend("SEARCH", "/api/v1/cities?query=cordoba")).rejects.toThrow();
+    const response = await callBackend("SEARCH", "/api/v1/cities?query=cordoba");
 
+    expect(response.status).toBe(504);
+    expect(response.headers.get("content-type")).toBe("application/json");
+    expect(await response.json()).toEqual({ code: "PROVIDER_TIMEOUT" });
     const entry = JSON.parse(logs[0] ?? "{}") as Record<string, unknown>;
-    expect(entry).toMatchObject({ operation: "SEARCH", outcome: "TIMEOUT" });
+    expect(entry).toMatchObject({ operation: "SEARCH", outcome: "TIMEOUT", status: 504 });
+  });
+
+  it("si el backend es inaccesible devuelve 502 PROVIDER_UNAVAILABLE sin detalles", async () => {
+    vi.stubEnv("BACKEND_URL", "http://backend:8080");
+    fetchMock.mockRejectedValue(new TypeError("fetch failed: connect ECONNREFUSED 10.0.0.5:8080"));
+
+    const response = await callBackend("CURRENT_WEATHER", "/api/v1/current-weather?latitude=1&longitude=2");
+
+    expect(response.status).toBe(502);
+    const body = await response.text();
+    expect(JSON.parse(body)).toEqual({ code: "PROVIDER_UNAVAILABLE" });
+    expect(body).not.toContain("ECONNREFUSED");
+    const entry = JSON.parse(logs[0] ?? "{}") as Record<string, unknown>;
+    expect(entry).toMatchObject({ operation: "CURRENT_WEATHER", outcome: "UNAVAILABLE", status: 502 });
+    expect(logs[0]).not.toContain("10.0.0.5");
+  });
+
+  it("reenvía los 4xx y 5xx del backend tal cual", async () => {
+    vi.stubEnv("BACKEND_URL", "http://backend:8080");
+    for (const [status, code] of [
+      [400, "INVALID_REQUEST"],
+      [502, "PROVIDER_UNAVAILABLE"],
+      [504, "PROVIDER_TIMEOUT"],
+    ] as const) {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ code }), { status, headers: { "content-type": "application/json" } }),
+      );
+      const response = await callBackend("SEARCH", "/api/v1/cities?query=cordoba");
+      expect(response.status).toBe(status);
+      expect(await response.json()).toEqual({ code });
+    }
   });
 });

@@ -1,12 +1,13 @@
 package ar.chiflete.weather.application.port.out;
 
 /**
- * El proveedor de datos no está disponible o respondió con error. No lleva el mensaje del
- * proveedor, para no filtrar detalles (FR-023).
+ * El proveedor de datos no está disponible o respondió con error. No lleva mensaje ni causa: los
+ * del cliente HTTP incluyen la URL (con el texto buscado) y el motivo del proveedor (FR-023,
+ * Principio V).
  */
 public class ProviderUnavailableException extends RuntimeException {
 
-    public ProviderUnavailableException(Throwable cause) {
-        super(null, cause, false, false);
+    public ProviderUnavailableException() {
+        super(null, null, false, false);
     }
 }
