@@ -140,18 +140,18 @@ description: "Task list for feature 001-city-current-weather"
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T060 [P] [US2] Ampliar `backend/src/test/java/ar/chiflete/weather/adapter/in/web/CitiesContractTest.java`: `offset=5&limit=5` devuelve los resultados 6–10 y `hasMore` correcto; `offset=95&limit=5` → `hasMore=false`; `offset=96&limit=5` → `400 {"code":"INVALID_REQUEST"}` (`offset + limit` no puede superar 100); `limit=21` → `400`
-- [ ] T061 [P] [US2] Ampliar `backend/src/test/java/ar/chiflete/weather/application/service/SearchCitiesServiceTest.java`: con `offset=5` y `limit=5` pide `count=11`, y el registro lleva `operation = SEARCH` y `offset = 5`
-- [ ] T062 [P] [US2] Prueba de componente en `frontend/tests/unit/components/LoadMoreButton.test.tsx` y ampliación de `frontend/tests/unit/components/CityResultList.test.tsx`: con `hasMore=true` aparece "Ver más resultados" (≥ 44 × 44 px); al pulsarlo se pide el siguiente `offset` y se añaden resultados sin perder los anteriores; con `hasMore=false` no aparece; si la petición falla, se conservan los resultados, se muestra "Error interno" debajo y el botón sigue disponible
-- [ ] T063 [P] [US2] Ampliar `frontend/tests/unit/components/CitySearch.test.tsx`: tras ampliar la lista, cambiar el texto vuelve a mostrar solo los 5 primeros de la nueva búsqueda
-- [ ] T064 [P] [US2] Prueba E2E en `frontend/tests/e2e/load-more.spec.ts` a 320 px: buscar `san` en el backend simulado (con 12 resultados) muestra 5, luego 10 y luego 12, y el botón desaparece; sin scroll horizontal
+- [X] T060 [P] [US2] Ampliar `backend/src/test/java/ar/chiflete/weather/adapter/in/web/CitiesContractTest.java` (con el `SearchCitiesService` real sobre un `CityCatalog` simulado, para ejercitar la validación y la paginación): `offset=5&limit=5` devuelve los resultados 6–10 y `hasMore` correcto; `offset=95&limit=5` → `hasMore=false`; `offset=96&limit=5` → `400 {"code":"INVALID_REQUEST"}` (`offset + limit` no puede superar 100); `limit=21` → `400`
+- [X] T061 [P] [US2] Ampliar `backend/src/test/java/ar/chiflete/weather/application/service/SearchCitiesServiceTest.java`: con `offset=5` y `limit=5` pide `count=11`, y el registro lleva `operation = SEARCH` y `offset = 5`
+- [X] T062 [P] [US2] Prueba de componente en `frontend/tests/unit/components/LoadMoreButton.test.tsx` y ampliación de `frontend/tests/unit/components/CityResultList.test.tsx`: con `hasMore=true` aparece "Ver más resultados" (≥ 44 × 44 px); al pulsarlo se pide el siguiente `offset` y se añaden resultados sin perder los anteriores; con `hasMore=false` no aparece; si la petición falla, se conservan los resultados, se muestra "Error interno" debajo y el botón sigue disponible
+- [X] T063 [P] [US2] Ampliar `frontend/tests/unit/components/CitySearch.test.tsx`: tras ampliar la lista, cambiar el texto vuelve a mostrar solo los 5 primeros de la nueva búsqueda
+- [X] T064 [P] [US2] Prueba E2E en `frontend/tests/e2e/load-more.spec.ts` a 320 px: buscar `san` en el backend simulado (con 12 resultados) muestra 5, luego 10 y luego 12, y el botón desaparece; sin scroll horizontal
 
 ### Implementation for User Story 2
 
-- [ ] T065 [US2] Completar la validación de `offset`/`limit` en `backend/src/main/java/ar/chiflete/weather/domain/CitySearchQuery.java` y el paso de `offset` en `backend/src/main/java/ar/chiflete/weather/application/service/SearchCitiesService.java` para que pasen T060 y T061
-- [ ] T066 [US2] Añadir a `frontend/src/i18n/messages/es.json` la clave "Ver más resultados"
-- [ ] T067 [US2] Implementar `frontend/src/components/LoadMoreButton.tsx` e integrarlo en `frontend/src/components/CityResultList.tsx` y `frontend/src/components/CitySearch.tsx` (acumulación de páginas, reinicio al cambiar el texto, error local que conserva los resultados) para que pasen T062, T063 y T064
-- [ ] T068 [US2] Añadir un conjunto de 12 resultados para `san` y la simulación de fallo en la segunda página en `frontend/tests/e2e/mock-backend.mts`
+- [X] T065 [US2] Completar la validación de `offset`/`limit` en `backend/src/main/java/ar/chiflete/weather/domain/CitySearchQuery.java` y el paso de `offset` en `backend/src/main/java/ar/chiflete/weather/application/service/SearchCitiesService.java` para que pasen T060 y T061
+- [X] T066 [US2] Añadir a `frontend/src/i18n/messages/es.json` la clave "Ver más resultados"
+- [X] T067 [US2] Implementar `frontend/src/components/LoadMoreButton.tsx` e integrarlo en `frontend/src/components/CityResultList.tsx` y `frontend/src/components/CitySearch.tsx` (acumulación de páginas, reinicio al cambiar el texto, error local que conserva los resultados) para que pasen T062, T063 y T064
+- [X] T068 [US2] Añadir un conjunto de 12 resultados para `san` en `frontend/tests/e2e/mock-backend.mts`; el fallo en la segunda página se simula en `load-more.spec.ts` con `page.route`, sin casos especiales en el backend simulado
 
 **Checkpoint**: User Stories 1 y 2 funcionan de forma independiente (quickstart, escenario 3)
 

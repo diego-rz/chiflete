@@ -101,4 +101,90 @@ describe("CitySearch", () => {
     expect(onSelect).toHaveBeenCalledWith(cordoba);
     expect(screen.queryByRole("list")).toBeNull();
   });
+
+  describe("Ver más resultados", () => {
+    const sanCities = Array.from({ length: 12 }, (_, i) => ({
+      id: 100 + i,
+      name: `San ${i + 1}`,
+      country: "Argentina",
+      latitude: -30 - i,
+      longitude: -60,
+    }));
+
+    function page(offset: number) {
+      return { items: sanCities.slice(offset, offset + 5), hasMore: sanCities.length > offset + 5 };
+    }
+
+    function shownNames() {
+      return screen.getAllByRole("button").filter((b) => b.textContent?.startsWith("San ")).map((b) => b.textContent);
+    }
+
+    it("añade la siguiente tanda sin perder la anterior y desaparece al agotarlos", async () => {
+      fetchMock.mockImplementation(async (input) => {
+        const offset = Number(new URL(String(input), "http://localhost").searchParams.get("offset"));
+        return jsonResponse(page(offset));
+      });
+      render(<CitySearch onSelect={() => undefined} />);
+
+      type("san");
+      await settle();
+      expect(shownNames()).toHaveLength(5);
+
+      fireEvent.click(screen.getByRole("button", { name: t("search.loadMore") }));
+      await settle();
+      expect(String(fetchMock.mock.calls[1]?.[0])).toBe("/api/cities?query=san&offset=5");
+      expect(shownNames()).toHaveLength(10);
+      expect(shownNames()[0]).toContain("San 1");
+
+      fireEvent.click(screen.getByRole("button", { name: t("search.loadMore") }));
+      await settle();
+      expect(shownNames()).toHaveLength(12);
+      expect(screen.queryByRole("button", { name: t("search.loadMore") })).toBeNull();
+    });
+
+    it("si falla conserva los resultados, muestra Error interno debajo y permite reintentar", async () => {
+      let failNext = false;
+      fetchMock.mockImplementation(async (input) => {
+        const offset = Number(new URL(String(input), "http://localhost").searchParams.get("offset"));
+        if (failNext) {
+          failNext = false;
+          return jsonResponse({ code: "PROVIDER_UNAVAILABLE" }, 502);
+        }
+        return jsonResponse(page(offset));
+      });
+      render(<CitySearch onSelect={() => undefined} />);
+      type("san");
+      await settle();
+
+      failNext = true;
+      fireEvent.click(screen.getByRole("button", { name: t("search.loadMore") }));
+      await settle();
+      expect(shownNames()).toHaveLength(5);
+      expect(screen.getByRole("alert").textContent).toBe(t("error.internal"));
+
+      fireEvent.click(screen.getByRole("button", { name: t("search.loadMore") }));
+      await settle();
+      expect(shownNames()).toHaveLength(10);
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("al cambiar el texto vuelve a mostrar solo los 5 primeros de la nueva búsqueda", async () => {
+      fetchMock.mockImplementation(async (input) => {
+        const offset = Number(new URL(String(input), "http://localhost").searchParams.get("offset"));
+        return jsonResponse(page(offset));
+      });
+      render(<CitySearch onSelect={() => undefined} />);
+      type("san");
+      await settle();
+      fireEvent.click(screen.getByRole("button", { name: t("search.loadMore") }));
+      await settle();
+      expect(shownNames()).toHaveLength(10);
+
+      type("san ");
+      type("sant");
+      await settle();
+      expect(String(fetchMock.mock.lastCall?.[0])).toBe("/api/cities?query=sant&offset=0");
+      expect(shownNames()).toHaveLength(5);
+    });
+  });
 });

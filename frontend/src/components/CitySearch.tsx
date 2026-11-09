@@ -15,16 +15,31 @@ const MIN_QUERY_LENGTH = 3;
 type SearchState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "loaded"; page: CitySearchPage }
+  | {
+      status: "loaded";
+      query: string;
+      items: City[];
+      hasMore: boolean;
+      /** Estado de la carga de la siguiente tanda (FR-009, FR-009a). */
+      more: "idle" | "loading" | "failed";
+    }
   | { status: "error" };
 
 interface Props {
   onSelect: (city: City) => void;
 }
 
+async function fetchPage(query: string, offset: number, signal: AbortSignal): Promise<CitySearchPage> {
+  const params = new URLSearchParams({ query, offset: String(offset) });
+  const response = await fetch(`/api/cities?${params.toString()}`, { signal });
+  if (!response.ok) throw new Error(String(response.status));
+  return (await response.json()) as CitySearchPage;
+}
+
 /**
  * Cuadro de búsqueda. Busca desde el tercer carácter en cada cambio, sin Enter (FR-003, FR-004), y
- * la lista corresponde siempre al texto actual (Edge Cases, "Respuestas fuera de orden").
+ * la lista corresponde siempre al texto actual (Edge Cases, "Respuestas fuera de orden"). Cambiar
+ * el texto vuelve a la primera tanda de 5.
  */
 export function CitySearch({ onSelect }: Props) {
   const inputId = useId();
@@ -41,15 +56,22 @@ export function CitySearch({ onSelect }: Props) {
       return;
     }
     setState({ status: "loading" });
-    const params = new URLSearchParams({ query, offset: "0" });
     run(
-      async (signal) => {
-        const response = await fetch(`/api/cities?${params.toString()}`, { signal });
-        if (!response.ok) throw new Error(String(response.status));
-        return (await response.json()) as CitySearchPage;
-      },
-      (page) => setState({ status: "loaded", page }),
+      (signal) => fetchPage(query, 0, signal),
+      (page) => setState({ status: "loaded", query, items: page.items, hasMore: page.hasMore, more: "idle" }),
       () => setState({ status: "error" }),
+    );
+  }
+
+  function loadMore() {
+    if (state.status !== "loaded") return;
+    const current = state;
+    setState({ ...current, more: "loading" });
+    run(
+      (signal) => fetchPage(current.query, current.items.length, signal),
+      (page) => setState({ ...current, items: [...current.items, ...page.items], hasMore: page.hasMore, more: "idle" }),
+      // Si falla, se conservan los resultados ya mostrados (FR-009a).
+      () => setState({ ...current, more: "failed" }),
     );
   }
 
@@ -80,8 +102,15 @@ export function CitySearch({ onSelect }: Props) {
           {t("search.loading")}
         </p>
       )}
-      {state.status === "loaded" && state.page.items.length > 0 && (
-        <CityResultList items={state.page.items} onSelect={select} />
+      {state.status === "loaded" && state.items.length > 0 && (
+        <CityResultList
+          items={state.items}
+          onSelect={select}
+          hasMore={state.hasMore}
+          onLoadMore={loadMore}
+          loadingMore={state.more === "loading"}
+          loadMoreFailed={state.more === "failed"}
+        />
       )}
     </div>
   );

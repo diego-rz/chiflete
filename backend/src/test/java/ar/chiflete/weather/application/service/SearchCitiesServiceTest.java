@@ -70,6 +70,20 @@ class SearchCitiesServiceTest {
         assertThat(LogCapture.fullText(logs.events().getFirst())).doesNotContain("xyzqwv");
     }
 
+    @Test
+    void secondPageAsksForElevenAndLogsItsOffset() {
+        catalog.results = cities(12);
+
+        SearchPage page = service.search("san", 5, 5);
+
+        assertThat(catalog.requests).containsExactly("san|11");
+        assertThat(page.items()).extracting(City::id).containsExactly(6L, 7L, 8L, 9L, 10L);
+        assertThat(page.hasMore()).isTrue();
+        assertThat(LogCapture.keyValues(logs.events().getFirst()))
+                .containsEntry("operation", "SEARCH")
+                .containsEntry("offset", 5);
+    }
+
     private static List<City> cities(int n) {
         return LongStream.rangeClosed(1, n).mapToObj(i -> new City(i, "Córdoba " + i, null, null, 0, 0)).toList();
     }

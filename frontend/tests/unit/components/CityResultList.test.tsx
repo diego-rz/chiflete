@@ -40,4 +40,14 @@ describe("CityResultList", () => {
 
     expect(onSelect).toHaveBeenCalledWith(sanJuan);
   });
+
+  it("con hasMore muestra Ver más resultados y sin hasMore no", () => {
+    const { rerender } = render(
+      <CityResultList items={[cordoba]} onSelect={() => undefined} hasMore={true} onLoadMore={() => undefined} />,
+    );
+    expect(screen.getByRole("button", { name: t("search.loadMore") })).toBeTruthy();
+
+    rerender(<CityResultList items={[cordoba]} onSelect={() => undefined} hasMore={false} onLoadMore={() => undefined} />);
+    expect(screen.queryByRole("button", { name: t("search.loadMore") })).toBeNull();
+  });
 });

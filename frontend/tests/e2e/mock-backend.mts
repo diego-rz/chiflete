@@ -20,6 +20,19 @@ const cities = [
   { id: 3465328, name: "Cordobá", province: "Paraná", country: "Brasil", latitude: -25.6, longitude: -50.5 },
   { id: 3860260, name: "Cordobita", country: "Argentina", latitude: -30.1, longitude: -64.5 },
   { id: 3838583, name: "Rosario", province: "Provincia de Santa Fe", country: "Argentina", latitude: -32.94682, longitude: -60.63932 },
+  // 12 ciudades que empiezan por "San" para "Ver más resultados" (5, 10 y 12).
+  { id: 3837213, name: "San Juan", province: "Provincia de San Juan", country: "Argentina", latitude: -31.5375, longitude: -68.53639 },
+  { id: 4568127, name: "San Juan", country: "Puerto Rico", latitude: 18.46633, longitude: -66.10572 },
+  { id: 3621849, name: "San José", province: "Provincia de San José", country: "Costa Rica", latitude: 9.93333, longitude: -84.08333 },
+  { id: 5392171, name: "San José", province: "California", country: "Estados Unidos", latitude: 37.33939, longitude: -121.89496 },
+  { id: 3583361, name: "San Salvador", province: "Departamento de San Salvador", country: "El Salvador", latitude: 13.68935, longitude: -89.18718 },
+  { id: 3871336, name: "Santiago", province: "Región Metropolitana de Santiago", country: "Chile", latitude: -33.45694, longitude: -70.64827 },
+  { id: 3492908, name: "Santo Domingo", province: "Distrito Nacional", country: "República Dominicana", latitude: 18.47186, longitude: -69.89232 },
+  { id: 3836277, name: "Santa Fe", province: "Provincia de Santa Fe", country: "Argentina", latitude: -31.64881, longitude: -60.70868 },
+  { id: 3836564, name: "San Miguel de Tucumán", province: "Provincia de Tucumán", country: "Argentina", latitude: -26.82414, longitude: -65.2226 },
+  { id: 3837702, name: "San Fernando del Valle de Catamarca", province: "Provincia de Catamarca", country: "Argentina", latitude: -28.46957, longitude: -65.78524 },
+  { id: 3109718, name: "San Sebastián", province: "País Vasco", country: "España", latitude: 43.31283, longitude: -1.97499 },
+  { id: 3450554, name: "Santa Maria", province: "Rio Grande do Sul", country: "Brasil", latitude: -29.68417, longitude: -53.80694 },
 ] satisfies City[];
 
 const weatherByCityId = new Map<number, CurrentWeather>([
