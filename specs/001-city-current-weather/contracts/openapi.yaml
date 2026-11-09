@@ -62,8 +62,8 @@ paths:
                 cordoba:
                   value:
                     items:
-                      - { id: 3860259, name: Córdoba, province: Provincia de Córdoba, country: Argentina }
-                      - { id: 2519240, name: Córdoba, province: Andalucía, country: España }
+                      - { id: 3860259, name: Córdoba, province: Provincia de Córdoba, country: Argentina, latitude: -31.4135, longitude: -64.18105 }
+                      - { id: 2519240, name: Córdoba, province: Andalucía, country: España, latitude: 37.89155, longitude: -4.77275 }
                     hasMore: true
                 empty:
                   value:
@@ -75,19 +75,35 @@ paths:
           $ref: '#/components/responses/ProviderUnavailable'
         '504':
           $ref: '#/components/responses/ProviderTimeout'
-  /api/v1/cities/{cityId}/current-weather:
+  /api/v1/current-weather:
     get:
       tags: [weather]
       operationId: getCurrentWeather
-      summary: Clima actual más reciente de una ciudad
+      summary: Clima actual más reciente en unas coordenadas
+      description: |
+        Se consulta con las coordenadas de una ciudad devuelta por la búsqueda. La respuesta no
+        repite la ciudad: el cliente ya la conoce por el resultado elegido.
       parameters:
-        - name: cityId
-          in: path
+        - name: latitude
+          in: query
           required: true
+          description: Latitud en grados decimales (WGS84). METRIC → °.
           schema:
-            type: integer
-            format: int64
-            minimum: 1
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+          x-unit: { METRIC: '°' }
+        - name: longitude
+          in: query
+          required: true
+          description: Longitud en grados decimales (WGS84). METRIC → °.
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+          x-unit: { METRIC: '°' }
       responses:
         '200':
           description: Clima actual. Los datos que el proveedor no informa se omiten.
@@ -98,7 +114,6 @@ paths:
               examples:
                 complete:
                   value:
-                    city: { id: 3860259, name: Córdoba, province: Provincia de Córdoba, country: Argentina }
                     measurementSystem: METRIC
                     observedAt: '2026-11-01T02:00:00Z'
                     stale: false
@@ -111,20 +126,12 @@ paths:
                     visibility: 49.26
                 partial:
                   value:
-                    city: { id: 3860259, name: Córdoba, province: Provincia de Córdoba, country: Argentina }
                     measurementSystem: METRIC
                     observedAt: '2026-10-31T21:00:00Z'
                     stale: true
                     temperature: 18.1
         '400':
           $ref: '#/components/responses/InvalidRequest'
-        '404':
-          description: La ciudad no existe.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example: { code: CITY_NOT_FOUND }
         '502':
           $ref: '#/components/responses/ProviderUnavailable'
         '504':
@@ -155,7 +162,7 @@ components:
   schemas:
     City:
       type: object
-      required: [id, name]
+      required: [id, name, latitude, longitude]
       additionalProperties: false
       properties:
         id:
@@ -171,6 +178,20 @@ components:
         country:
           type: string
           description: País. Se omite si el proveedor no lo informa.
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          description: Latitud de la ciudad en grados decimales (WGS84). METRIC → °.
+          x-unit: { METRIC: '°' }
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          description: Longitud de la ciudad en grados decimales (WGS84). METRIC → °.
+          x-unit: { METRIC: '°' }
     CitySearchPage:
       type: object
       required: [items, hasMore]
@@ -190,11 +211,9 @@ components:
       description: Sistema de medida en que se expresan las magnitudes.
     CurrentWeather:
       type: object
-      required: [city, measurementSystem, stale]
+      required: [measurementSystem, stale]
       additionalProperties: false
       properties:
-        city:
-          $ref: '#/components/schemas/City'
         measurementSystem:
           $ref: '#/components/schemas/MeasurementSystem'
         observedAt:
@@ -253,4 +272,4 @@ components:
       properties:
         code:
           type: string
-          enum: [INVALID_REQUEST, CITY_NOT_FOUND, PROVIDER_UNAVAILABLE, PROVIDER_TIMEOUT]
+          enum: [INVALID_REQUEST, PROVIDER_UNAVAILABLE, PROVIDER_TIMEOUT]

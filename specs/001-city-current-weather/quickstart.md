@@ -62,7 +62,7 @@ OPEN_METEO_GEOCODING_URL=http://10.255.255.1 OPEN_METEO_FORECAST_URL=http://10.2
 
 | # | Acción | Resultado esperado | Requisitos |
 |---|--------|--------------------|-----------|
-| 8 | Escribir `cordoba` | En unos 4–5 s aparece "Error interno" y ningún resultado | FR-021, FR-022a |
+| 8 | Escribir `cordoba` | En unos 1–4 s aparece "Error interno" y ningún resultado | FR-021, FR-022a |
 | 9 | Seleccionar una ciudad (con el proveedor de búsqueda sano y el de clima caído) | "Error interno" sin datos de clima | FR-022 |
 
 La simulación de fallos al cargar más resultados y de datos de más de 2 horas está cubierta por
@@ -74,7 +74,9 @@ pruebas automatizadas con el proveedor simulado; no se reproduce a mano.
 docker compose logs backend | tail -n 20
 ```
 
-- Cada línea es JSON (formato ECS) con `operation`, `outcome` y `durationMs` (FR-028a).
+- Cada línea es JSON (formato ECS) con `operation` (`SEARCH` o `CURRENT_WEATHER`), `outcome` y
+  `durationMs`; las búsquedas llevan `offset` y las de clima, las coordenadas de la ciudad
+  (FR-028a).
 - No aparecen ni el texto buscado (`cordoba`) ni direcciones IP (FR-028b, Principio V). Puedes
   comprobarlo con `docker compose logs | grep -i cordoba`, que no debe devolver nada.
 - Las métricas se consultan desde dentro de la red de compose:

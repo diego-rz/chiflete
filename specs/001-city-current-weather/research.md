@@ -9,7 +9,8 @@ use).
 ## R1. Proveedor de búsqueda de ciudades: Open-Meteo Geocoding API
 
 - **Decision**: `GET https://geocoding-api.open-meteo.com/v1/search?name={texto}&count={n}&language=es&format=json`.
-  Para obtener una ciudad por identificador: `GET https://geocoding-api.open-meteo.com/v1/get?id={id}&language=es`.
+  Cada resultado incluye sus coordenadas, que el contrato expone para pedir el clima sin una
+  segunda llamada al proveedor (ver R5). No se usa `GET /v1/get?id={id}`.
 - **Rationale** (verificado en la documentación y con llamadas reales):
   - Desde 3 caracteres hace coincidencia por prefijo normalizada, sin distinguir mayúsculas ni
     diacríticos: `cordoba` → "Córdoba" (Argentina, España, México…). Cubre FR-005 sin lógica
@@ -19,8 +20,7 @@ use).
   - `count` admite de 1 a 100; **no hay paginación**. Los resultados vienen ordenados por el
     proveedor (en las pruebas, por población descendente).
   - Sin coincidencias, la respuesta es `200` con un JSON **sin** el campo `results`.
-  - Errores: `400` con `{"error": true, "reason": "..."}`. `get?id` inexistente → `400`
-    "Location ID not found.".
+  - Errores: `400` con `{"error": true, "reason": "..."}`.
   - Campos usados: `id`, `name`, `admin1` (puede faltar), `country` (puede faltar: "San Juan" de
     Puerto Rico llega sin `country`), `latitude`, `longitude`.
   - El texto debe ir codificado en URL; sin codificar, "ñandú" devuelve `403` del proxy nginx del
@@ -97,14 +97,19 @@ use).
 ## R5. Cliente HTTP hacia Open-Meteo y tiempos de espera
 
 - **Decision**: `RestClient` creado desde el `RestClient.Builder` autoconfigurado, sobre el
-  cliente JDK (`java.net.http.HttpClient`), con `spring.http.clients.connect-timeout=2s` y
-  `spring.http.clients.read-timeout=4s`.
+  cliente JDK (`java.net.http.HttpClient`), con `spring.http.clients.connect-timeout=1s` y
+  `spring.http.clients.read-timeout=3s`. Cada petición del backend hace **una sola** llamada al
+  proveedor: la búsqueda llama a Geocoding y el clima llama a Forecast con las coordenadas que
+  recibe (revisado el 2026-11-09: antes el clima resolvía primero la ciudad con `get?id`, dos
+  llamadas seguidas que podían superar el límite de 5 s).
 - **Rationale** (verificado en docs.spring.io, 4.1.2): el prefijo `spring.http.clients.*` aplica a
   todos los clientes autoconfigurados. Sin Apache ni Jetty en el classpath se usa el cliente JDK,
-  sin dependencias extra. El backend corta a los 4 s para que el frontend pueda responder
-  "Error interno" antes de su propio límite de 5 s (FR-022a).
+  sin dependencias extra. Con una sola llamada, el backend termina como mucho en unos 4 s
+  (1 s de conexión + 3 s de lectura), antes del límite de 5 s del frontend (FR-022a). Así el
+  resultado que registra el backend coincide siempre con lo que ve el usuario.
 - **Alternatives considered**: interfaces `@HttpExchange` con `@ImportHttpServices` (válidas, pero
-  añaden configuración por grupo para solo dos llamadas).
+  añaden configuración por grupo para solo dos llamadas); mantener `get?id` con un plazo total
+  por operación (más lógica para un dato que el frontend ya tiene).
 
 ## R6. Arquitectura hexagonal del backend
 
@@ -144,7 +149,7 @@ use).
 
 - **Decision**: Next.js **16.4.x** (App Router) con React **19.3.x**, TypeScript `strict` y
   Tailwind CSS **4.3.x**. El navegador solo habla con Next.js: los *Route Handlers*
-  `app/api/cities/route.ts` y `app/api/cities/[cityId]/current-weather/route.ts` llaman al
+  `app/api/cities/route.ts` y `app/api/current-weather/route.ts` llaman al
   backend con `fetch` y `AbortSignal.timeout(5000)`. La URL del backend se lee de
   `process.env.BACKEND_URL` en cada petición, en el servidor.
 - **Rationale** (verificado en el anuncio oficial de Next.js 16):
@@ -179,16 +184,18 @@ use).
 ## R10. Observabilidad
 
 - **Decision**:
-  - Backend: logs estructurados `logging.structured.format.console=ecs`. Cada operación se
-    registra en el caso de uso con la API fluida de SLF4J (`operation`, `outcome`, `durationMs`,
-    y `cityId`/`cityName` en las operaciones de clima). Métricas con Spring Boot Actuator:
-    `http.server.requests` y `http.client.requests` (número, latencia y estado por ruta) más un
-    contador `chiflete.operations` con etiquetas `operation` y `outcome`. Se exponen solo
-    `health` y `metrics`.
+  - Backend: logs estructurados `logging.structured.format.console=ecs`. Cada petición se
+    registra en el caso de uso con la API fluida de SLF4J: `operation` (`SEARCH` o
+    `CURRENT_WEATHER`), `outcome`, `durationMs`, `offset` en las búsquedas y `latitude`/`longitude`
+    en las de clima. Métricas: solo las de Spring Boot Actuator, `http.server.requests` y
+    `http.client.requests` (número, latencia y estado por ruta), sin métricas propias. Se exponen
+    solo `health` y `metrics`.
   - Frontend (servidor Next.js): una línea JSON por petición a los Route Handlers con
     `operation`, `outcome` y `durationMs`.
 - **Rationale**: cubre FR-028a y FR-028c sin agentes ni registros externos (verificado en la
-  documentación de logging de Boot 4.1.2). FR-028b se garantiza porque las etiquetas `uri` de
+  documentación de logging de Boot 4.1.2). FR-028c mide por endpoint, y cada endpoint es una ruta
+  de `http.server.requests`, así que no hace falta un contador propio ni un puerto para él
+  (revisado el 2026-11-09). FR-028b se garantiza porque las etiquetas `uri` de
   Micrometer usan la plantilla de ruta (`/api/v1/cities`), no la URL real, y porque se llama al
   proveedor con plantillas de URI (`/v1/search?name={name}`). Pruebas automatizadas comprueban que
   ni el texto de búsqueda ni direcciones IP aparecen en logs ni métricas (Principio V).
@@ -204,7 +211,9 @@ use).
   - Backend: JUnit (vía `spring-boot-starter-test`) para dominio y aplicación sin Spring.
     `@WebMvcTest` con MockMvc y validación del contrato para el adaptador web.
     `MockRestServiceServer` para el adaptador de Open-Meteo, con respuestas JSON reales
-    capturadas el 2026-11-01. Prueba de logs con `OutputCaptureExtension`.
+    capturadas el 2026-11-01. Los registros de los casos de uso se prueban con un
+    `ListAppender` de Logback; la ausencia del texto buscado y de IPs, con `OutputCaptureExtension`
+    en una prueba `@SpringBootTest`.
   - Frontend: Vitest + React Testing Library para componentes y Route Handlers; Playwright para
     E2E a 320 px (sin scroll horizontal, objetivos táctiles ≥ 44 × 44 px), con el backend
     simulado.

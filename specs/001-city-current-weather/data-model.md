@@ -16,9 +16,12 @@ Ciudad devuelta por la búsqueda y seleccionable por el usuario.
 | `name` | texto | Sí | `name` con `language=es` | Nombre en español si existe; si no, el local (FR-005b). |
 | `province` | texto | No | `admin1` | Se omite si el proveedor no lo informa. |
 | `country` | texto | No | `country` | Se omite si el proveedor no lo informa (caso real: "San Juan", Puerto Rico). |
+| `latitude` | decimal −90–90 | Sí | `latitude` | Grados decimales (WGS84). El frontend la usa para pedir el clima. |
+| `longitude` | decimal −180–180 | Sí | `longitude` | Grados decimales (WGS84). El frontend la usa para pedir el clima. |
 
-`latitude` y `longitude` existen en el dominio para pedir el clima, pero **no** se exponen en el
-contrato: el clima se pide por `id` y el backend resuelve las coordenadas.
+El clima se pide con las coordenadas de la ciudad elegida, así que el backend hace una sola
+llamada al proveedor por petición (research R5). El frontend conserva la `City` elegida para
+mostrarla junto al clima (FR-019) y para "Actualizar".
 
 ## CitySearch (Búsqueda) — solo entrada
 
@@ -35,11 +38,19 @@ contrato: el clima se pide por `id` y el backend resuelve las coordenadas.
 | `items` | lista de `City` | Porción `[offset, offset + limit)` de los resultados del proveedor, en el orden del proveedor. Vacía si no hay coincidencias (la UI muestra "Sin resultados", FR-010). |
 | `hasMore` | booleano | `true` si el proveedor devolvió más de `offset + limit` resultados y `offset + limit < 100` (FR-009). |
 
+## CurrentWeatherRequest (Petición de clima) — solo entrada
+
+| Campo | Tipo | Reglas |
+|-------|------|--------|
+| `latitude` | decimal | Obligatoria, entre −90 y 90. Si no, `400`. |
+| `longitude` | decimal | Obligatoria, entre −180 y 180. Si no, `400`. |
+
 ## CurrentWeather (Observación del clima)
+
+La respuesta no incluye la ciudad: el frontend ya la tiene por el resultado elegido.
 
 | Campo | Tipo | Obligatorio | Origen (Open-Meteo Forecast, `current`) | Unidad con `METRIC` |
 |-------|------|-------------|-----------------------------------------|---------------------|
-| `city` | `City` | Sí | Geocoding `get?id` | — |
 | `measurementSystem` | enum `METRIC` | Sí | Constante en esta versión (FR-013a) | — |
 | `observedAt` | instante UTC (ISO-8601) | No | `time` (unixtime) | — |
 | `stale` | booleano | Sí | Calculado | — |
@@ -86,9 +97,8 @@ la respuesta de la petición más reciente; las respuestas de peticiones anterio
 | Situación | HTTP del backend | `code` | UI |
 |-----------|------------------|--------|----|
 | Parámetros inválidos | 400 | `INVALID_REQUEST` | No debería ocurrir (la UI valida antes); se trata como "Error interno". |
-| Ciudad inexistente | 404 | `CITY_NOT_FOUND` | "Error interno". |
 | Proveedor caído o con error | 502 | `PROVIDER_UNAVAILABLE` | "Error interno". |
-| Proveedor sin respuesta en 4 s | 504 | `PROVIDER_TIMEOUT` | "Error interno". |
+| Proveedor sin respuesta (1 s de conexión o 3 s de lectura) | 504 | `PROVIDER_TIMEOUT` | "Error interno". |
 
 El cuerpo de error solo lleva `code`; nunca trazas, rutas ni el nombre del proveedor (FR-023,
 Principio IV).

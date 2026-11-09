@@ -48,9 +48,12 @@
   a pulsar "Ver más resultados" para reintentar.
 - Q: ¿Cuánto se espera al proveedor antes de mostrar "Error interno"? → A: 5 segundos, igual para
   la búsqueda y para el clima.
-- Q: ¿Qué registra y mide la funcionalidad? → A: Cada operación (búsqueda, más resultados, clima,
-  actualizar) con su resultado y su duración; métricas de volumen, latencia y tasa de error por
-  operación. Del clima se registra la ciudad consultada; el texto de búsqueda nunca se registra.
+- Q: ¿Qué registra y mide la funcionalidad? → A: Cada petición de búsqueda (con su posición en
+  la lista, de modo que "más resultados" es una búsqueda que no empieza en el primero) y de clima
+  (seleccionar y "Actualizar" son la misma petición), con su resultado y su duración; métricas de
+  volumen, latencia y tasa de error por endpoint. Del clima se registran las coordenadas de la
+  ciudad consultada; el texto de búsqueda nunca se registra. (Revisado el 2026-11-09 para
+  simplificar: antes se distinguían cuatro operaciones y se medían por separado.)
 
 ### Session 2026-11-03
 
@@ -292,15 +295,16 @@ valor mostrado.
 - **FR-027**: El sistema NO DEBE solicitar ni utilizar la ubicación del usuario.
 - **FR-028**: Los registros operativos PUEDEN incluir la ciudad consultada, pero NO DEBEN
   contener ningún dato que identifique al usuario ni que permita vincular una consulta con él.
-- **FR-028a**: El sistema DEBE registrar cada operación (búsqueda, carga de más resultados,
-  obtención del clima y actualización) con su tipo, su resultado (éxito, sin resultados, error
-  del proveedor o tiempo agotado) y su duración. En las operaciones de clima se registra además la
-  ciudad consultada.
+- **FR-028a**: El sistema DEBE registrar cada petición de búsqueda (con su posición de inicio en
+  la lista, que distingue la carga de más resultados) y de clima (la selección y "Actualizar" se
+  registran igual), con su resultado (éxito, sin resultados, error del proveedor o tiempo agotado)
+  y su duración. En las peticiones de clima se registran además las coordenadas de la ciudad
+  consultada.
 - **FR-028b**: El texto escrito por el usuario en la búsqueda NUNCA DEBE aparecer en registros ni
   métricas.
-- **FR-028c**: El sistema DEBE medir, por tipo de operación, el número de operaciones, su latencia
-  y su tasa de error, de forma que puedan comprobarse SC-002, SC-003 y la disponibilidad del
-  proveedor.
+- **FR-028c**: El sistema DEBE medir, por endpoint (búsqueda y clima), el número de peticiones, su
+  latencia y su tasa de error, de forma que puedan comprobarse SC-002, SC-003 y la disponibilidad
+  del proveedor.
 
 **Presentación**
 

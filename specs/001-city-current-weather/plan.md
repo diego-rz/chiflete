@@ -42,8 +42,9 @@ verificado con Next.js 16, ver research R8)
 dependen sobre todo de la latencia de Open-Meteo.
 
 **Constraints**:
-- Límite de 5 s extremo a extremo (FR-022a): el backend corta a los 4 s hacia Open-Meteo y los
-  Route Handlers a los 5 s hacia el backend.
+- Límite de 5 s extremo a extremo (FR-022a): cada petición del backend hace una sola llamada a
+  Open-Meteo, con 1 s de conexión y 3 s de lectura; los Route Handlers cortan a los 5 s hacia el
+  backend.
 - 320 px sin scroll horizontal y objetivos táctiles ≥ 44 × 44 px.
 - Ni el texto de búsqueda ni IPs en logs o métricas.
 
@@ -60,7 +61,7 @@ objetivo de volumen fijado por el spec.
 | II | Test-first | Cada tarea empieza por la prueba que falla. Pruebas de contrato por endpoint (validador contra OpenAPI). Comando único: `make test`. Proveedor simulado, sin red: determinista. | ✅ | ✅ |
 | III | Documentación | `backend/README.md`, `frontend/README.md`; `docs/adr/0001-arquitectura-inicial.md` con diagramas C4 de contexto y de contenedores (y de componentes del backend hexagonal); OpenAPI con cada endpoint. | ✅ | ✅ |
 | IV | Privacidad | Sin persistencia ni cookies; Open-Meteo sin clave (uso no comercial), así que no hay secretos. El frontend no llama a terceros: solo a sus Route Handlers. Los errores solo llevan `code`. | ✅ | ✅ |
-| V | Observabilidad | Logs ECS por operación con resultado y duración; métricas de Actuator y un contador propio. Pruebas automatizadas que comprueban la ausencia del texto de búsqueda y de IPs. Ver research R10. | ✅ | ✅ |
+| V | Observabilidad | Logs ECS por petición (búsqueda con `offset`, clima con coordenadas) con resultado y duración; métricas de Actuator por endpoint, sin métricas propias. Pruebas automatizadas que comprueban la ausencia del texto de búsqueda y de IPs. Ver research R10. | ✅ | ✅ |
 | VI | Simplicidad | Cada dependencia está justificada en la tabla siguiente. Sin capas extra: hexagonal en paquetes de un solo módulo, sin caché, sin librería i18n. | ✅ | ✅ |
 | VII | Mobile-first | Diseño a 320 px primero; prueba E2E de ancho mínimo, scroll horizontal y tamaño táctil. | ✅ | ✅ |
 | VIII | i18n | Todo texto visible sale de `es.json` (también unidades y puntos cardinales). Prueba que falla si un componente contiene literales visibles. | ✅ | ✅ |
@@ -119,7 +120,7 @@ backend/
     │   ├── application/
     │   │   ├── port/in/         # SearchCities, GetCurrentWeather
     │   │   ├── port/out/        # CityCatalog, WeatherProvider
-    │   │   └── service/         # Casos de uso: registro y medición de operaciones
+    │   │   └── service/         # Casos de uso; registran cada petición con SLF4J
     │   ├── adapter/in/web/      # Controlador que implementa la interfaz generada; mapeo de errores
     │   ├── adapter/out/openmeteo/  # Clientes RestClient de Geocoding y Forecast
     │   └── config/              # Beans, reloj, propiedades
@@ -141,9 +142,10 @@ frontend/
     ├── app/
     │   ├── layout.tsx
     │   ├── page.tsx             # Pantalla única
-    │   └── api/cities/
-    │       ├── route.ts                          # GET → backend /api/v1/cities
-    │       └── [cityId]/current-weather/route.ts # GET → backend /api/v1/cities/{id}/current-weather
+    │   ├── api/cities/
+    │   │   └── route.ts         # GET → backend /api/v1/cities
+    │   └── api/current-weather/
+    │       └── route.ts         # GET → backend /api/v1/current-weather?latitude&longitude
     ├── components/              # CitySearch, CityResultList, CurrentWeatherCard, StaleWarning, ErrorMessage
     ├── lib/
     │   ├── api-types.ts         # Generado con openapi-typescript (no se edita a mano)
@@ -176,10 +178,12 @@ provisional.
   Handler llama a `GET /api/v1/cities` en el backend. El controlador invoca el caso de uso
   `SearchCities`, que usa el puerto `CityCatalog`, implementado por el adaptador de la Geocoding
   API (`count = min(offset + 6, 100)`, research R2).
-- **Flujo de clima**: el navegador llama a `/api/cities/{id}/current-weather`; el Route Handler
-  reenvía al mismo recurso del backend. El caso de uso `GetCurrentWeather` resuelve la ciudad con
-  `CityCatalog` (`get?id`) y los datos con `WeatherProvider` (Forecast API), y luego aplica las
-  reglas de dominio: omitir los ausentes, m→km y `stale` con reloj inyectado.
+- **Flujo de clima**: el navegador llama a `/api/current-weather?latitude&longitude` con las
+  coordenadas de la ciudad elegida; el Route Handler reenvía al mismo recurso del backend. El caso
+  de uso `GetCurrentWeather` pide los datos a `WeatherProvider` (Forecast API), en una sola
+  llamada, y aplica las reglas de dominio: omitir los ausentes, m→km y `stale` con reloj
+  inyectado. La ciudad no viaja en la respuesta: el frontend la conserva del resultado elegido
+  (FR-019) y la reutiliza en "Actualizar".
 - **Errores**: el adaptador traduce los fallos y los tiempos agotados de Open-Meteo en
   excepciones de puerto; el controlador las mapea a 502/504 con `code`. Next.js reenvía el código
   de estado y la UI muestra "Error interno" ante cualquier respuesta no 2xx, salvo en "Ver más",
