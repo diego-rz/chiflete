@@ -190,12 +190,12 @@ description: "Task list for feature 001-city-current-weather"
 
 **Purpose**: verificación global contra la constitución y la quickstart.
 
-- [ ] T082 [P] Prueba de métricas en `backend/src/test/java/ar/chiflete/weather/observability/MetricsTest.java`: tras una búsqueda y una consulta de clima, `http.server.requests` tiene una serie por endpoint (`uri` = `/api/v1/cities` y `/api/v1/current-weather`) con `status` y latencia, y `http.client.requests` existe; ninguna etiqueta contiene el texto buscado ni IPs (FR-028c)
-- [ ] T083 [P] Revisar `frontend/tests/e2e/` para que cada spec compruebe a 320 px la ausencia de scroll horizontal y el tamaño táctil mínimo de todos los elementos interactivos de su pantalla (Principio VII); añadir un caso con nombres largos de ciudad, provincia y país
-- [ ] T084 [P] Actualizar `docs/adr/0001-arquitectura-inicial.md`, `backend/README.md` y `frontend/README.md` con lo aprendido al implementar, incluido el resultado de cada punto "pendiente de verificar" del plan
-- [ ] T085 Añadir la atribución de datos requerida ("Datos meteorológicos: Open-Meteo" y "Ubicaciones: GeoNames") desde el catálogo en `frontend/src/i18n/messages/es.json` y mostrarla al pie de `frontend/src/app/page.tsx`
-- [ ] T086 Ejecutar `make test` (objetivo de `Makefile`) y comprobar que pasa por completo, de forma determinista y sin red
-- [ ] T087 Recorrer [quickstart.md](./quickstart.md) completo con `docker compose up --build`, incluidos los escenarios de fallo y la comprobación de que los logs no contienen el texto buscado
+- [X] T082 [P] Prueba de métricas en `backend/src/test/java/ar/chiflete/weather/observability/MetricsTest.java`: tras una búsqueda y una consulta de clima, `http.server.requests` tiene una serie por endpoint (`uri` = `/api/v1/cities` y `/api/v1/current-weather`) con `status` y latencia, y `http.client.requests` existe; ninguna etiqueta contiene el texto buscado ni IPs (FR-028c)
+- [X] T083 [P] Revisar `frontend/tests/e2e/` para que cada spec compruebe a 320 px la ausencia de scroll horizontal y el tamaño táctil mínimo de todos los elementos interactivos de su pantalla (Principio VII); añadir un caso con nombres largos de ciudad, provincia y país
+- [X] T084 [P] Actualizar `docs/adr/0001-arquitectura-inicial.md`, `backend/README.md` y `frontend/README.md` con lo aprendido al implementar, incluido el resultado de cada punto "pendiente de verificar" del plan
+- [X] T085 Añadir la atribución de datos requerida ("Datos meteorológicos: Open-Meteo" y "Ubicaciones: GeoNames") desde el catálogo en `frontend/src/i18n/messages/es.json` y mostrarla al pie de `frontend/src/app/page.tsx`
+- [X] T086 Ejecutar `make test` (objetivo de `Makefile`) y comprobar que pasa por completo, de forma determinista y sin red
+- [X] T087 Recorrer [quickstart.md](./quickstart.md) completo con `docker compose up --build`, incluidos los escenarios de fallo y la comprobación de que los logs no contienen el texto buscado
 
 ---
 

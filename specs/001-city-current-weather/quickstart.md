@@ -25,6 +25,9 @@ Resultado esperado:
 - `frontend` arranca después y escucha en <http://localhost:3000>.
 - El puerto 8080 **no** está publicado: `curl http://localhost:8080` falla. El navegador solo
   llega al backend a través de Next.js.
+- Si en la misma máquina hay un `npm run dev` o un `./mvnw spring-boot:run` en marcha, ocupan los
+  puertos 3000 y 8080 y `localhost` llegará a ellos, no a los contenedores. Detenlos antes de
+  validar con Docker (en WSL, `ss -ltnp | grep -E ':3000|:8080'` muestra quién escucha).
 
 ## 2. Ejecutar las pruebas
 

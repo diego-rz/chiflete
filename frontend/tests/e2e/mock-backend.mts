@@ -36,6 +36,15 @@ const cities = [
   // Casos de US3: datos parciales y observación desactualizada.
   { id: 3833367, name: "Ushuaia", province: "Tierra del Fuego", country: "Argentina", latitude: -54.8, longitude: -68.3 },
   { id: 6255152, name: "Vostok", country: "Antártida", latitude: -78.46, longitude: 106.84 },
+  // Nombres largos para comprobar que se ajustan a 320 px sin scroll horizontal.
+  {
+    id: 2644418,
+    name: "Llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch",
+    province: "Isle of Anglesey County Council Administrative Area",
+    country: "Reino Unido de Gran Bretaña e Irlanda del Norte",
+    latitude: 53.22,
+    longitude: -4.2,
+  },
 ] satisfies City[];
 
 const weatherByCityId = new Map<number, CurrentWeather>([

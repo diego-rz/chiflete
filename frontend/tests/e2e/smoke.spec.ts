@@ -1,10 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { expectMobileFriendly } from "./mobile";
 
-// Comprueba la base de la fase 2: la página carga en español y no hay scroll horizontal a 320 px.
-test("la página carga a 320 px sin scroll horizontal", async ({ page }) => {
+test("la página carga en español, a 320 px y con la atribución de los datos", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-  expect(scrollWidth).toBeLessThanOrEqual(320);
+
+  const footer = page.getByRole("contentinfo");
+  await expect(footer).toContainText("Datos meteorológicos:");
+  await expect(footer.getByRole("link", { name: "Open-Meteo" })).toHaveAttribute("href", "https://open-meteo.com/");
+  await expect(footer).toContainText("Ubicaciones:");
+  await expect(footer.getByRole("link", { name: "GeoNames" })).toHaveAttribute("href", "https://www.geonames.org/");
+
+  await expectMobileFriendly(page);
 });

@@ -1,16 +1,5 @@
-import { expect, type Page, test } from "@playwright/test";
-
-/** Ningún scroll horizontal y todo elemento interactivo de al menos 44 × 44 px (Principio VII). */
-async function expectMobileFriendly(page: Page) {
-  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-  expect(scrollWidth).toBeLessThanOrEqual(320);
-  for (const element of await page.locator("button, input, a[href]").all()) {
-    const box = await element.boundingBox();
-    expect(box, await element.evaluate((e) => e.outerHTML)).not.toBeNull();
-    expect(box!.width).toBeGreaterThanOrEqual(44);
-    expect(box!.height).toBeGreaterThanOrEqual(44);
-  }
-}
+import { expect, test } from "@playwright/test";
+import { expectMobileFriendly } from "./mobile";
 
 test("buscar una ciudad, ver su clima, actualizarlo y cambiar de ciudad", async ({ page, context }) => {
   await page.goto("/");
@@ -56,6 +45,7 @@ test("buscar una ciudad, ver su clima, actualizarlo y cambiar de ciudad", async 
   releaseWeather();
   await expect(newCard).toContainText("17,3 °C");
   await expect(newCard.getByText("E", { exact: true })).toBeVisible();
+  await expectMobileFriendly(page);
   await page.unroute("**/api/current-weather**");
 
   // Al recargar no queda rastro de la búsqueda ni de la ciudad (FR-026, SC-008).

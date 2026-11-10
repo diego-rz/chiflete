@@ -54,9 +54,24 @@ reales capturadas en [`src/test/resources/openmeteo/`](src/test/resources/openme
 
 No hay secretos: Open-Meteo no requiere clave para uso no comercial.
 
+## Errores
+
+| Situación | Respuesta |
+|-----------|-----------|
+| Parámetros inválidos (texto de menos de 3 o más de 100 caracteres, `offset + limit > 100`, coordenadas fuera de rango) | `400 {"code":"INVALID_REQUEST"}` |
+| Open-Meteo responde con error, es inaccesible o devuelve algo ilegible | `502 {"code":"PROVIDER_UNAVAILABLE"}` |
+| Open-Meteo no conecta en 1 s o no responde en 3 s | `504 {"code":"PROVIDER_TIMEOUT"}` |
+| Error no previsto | `500` sin cuerpo |
+
+Las excepciones de puerto no llevan mensaje ni causa, para que ni el motivo del proveedor ni la
+URL (que contiene el texto buscado) puedan acabar en una respuesta o en un log.
+
 ## Observabilidad
 
-- Logs estructurados ECS en la salida estándar (`logging.structured.format.console=ecs`).
+- Logs estructurados ECS en la salida estándar (`logging.structured.format.console=ecs`). Cada
+  petición deja una línea con `operation` (`SEARCH` o `CURRENT_WEATHER`), `outcome`
+  (`SUCCESS`, `NO_RESULTS`, `PROVIDER_ERROR` o `TIMEOUT`), `durationMs`, y `offset` o
+  `latitude`/`longitude`. Nunca el texto buscado ni IPs (`SearchPrivacyTest`, `MetricsTest`).
 - Actuator expone solo `health` y `metrics` (`/actuator/metrics/http.server.requests`,
   `/actuator/metrics/http.client.requests`).
 - Los errores HTTP solo llevan `{"code": ...}`; nunca trazas, rutas ni mensajes.

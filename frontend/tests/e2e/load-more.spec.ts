@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectMobileFriendly } from "./mobile";
 
 test("Ver más resultados añade tandas de 5 hasta agotarlos", async ({ page }) => {
   await page.goto("/");
@@ -11,6 +12,7 @@ test("Ver más resultados añade tandas de 5 hasta agotarlos", async ({ page }) 
   await loadMore.click();
   await expect(results).toHaveCount(10);
   await expect(results.first()).toContainText("San Juan");
+  await expectMobileFriendly(page);
 
   await loadMore.click();
   await expect(results).toHaveCount(12);
@@ -18,7 +20,7 @@ test("Ver más resultados añade tandas de 5 hasta agotarlos", async ({ page }) 
 
   // Nombres largos sin scroll horizontal a 320 px.
   await expect(page.getByText("San Fernando del Valle de Catamarca")).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await expectMobileFriendly(page);
 });
 
 test("si falla la carga de más resultados se conservan los anteriores y se puede reintentar", async ({ page }) => {
@@ -40,8 +42,7 @@ test("si falla la carga de más resultados se conservan los anteriores y se pued
   await expect(page.getByRole("alert").filter({ hasText: "Error interno" })).toBeVisible();
   await expect(results).toHaveCount(5);
   await expect(loadMore).toBeEnabled();
-  const box = await loadMore.boundingBox();
-  expect(box!.height).toBeGreaterThanOrEqual(44);
+  await expectMobileFriendly(page);
 
   await loadMore.click();
   await expect(results).toHaveCount(10);

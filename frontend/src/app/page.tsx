@@ -40,23 +40,40 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-6">
-      <h1 className="text-2xl font-semibold">{t("app.title")}</h1>
-      <CitySearch onSelect={loadWeather} />
-      {state.status === "loading" && (
-        <CurrentWeatherCard city={state.city} status="loading" onRefresh={() => loadWeather(state.city)} />
-      )}
-      {state.status === "error" && (
-        <CurrentWeatherCard city={state.city} status="error" onRefresh={() => loadWeather(state.city)} />
-      )}
-      {state.status === "loaded" && (
-        <CurrentWeatherCard
-          city={state.city}
-          status="loaded"
-          weather={state.weather}
-          onRefresh={() => loadWeather(state.city)}
-        />
-      )}
-    </main>
+    <>
+      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-6">
+        <h1 className="text-2xl font-semibold">{t("app.title")}</h1>
+        <CitySearch onSelect={loadWeather} />
+        {state.status === "loading" && (
+          <CurrentWeatherCard city={state.city} status="loading" onRefresh={() => loadWeather(state.city)} />
+        )}
+        {state.status === "error" && (
+          <CurrentWeatherCard city={state.city} status="error" onRefresh={() => loadWeather(state.city)} />
+        )}
+        {state.status === "loaded" && (
+          <CurrentWeatherCard
+            city={state.city}
+            status="loaded"
+            weather={state.weather}
+            onRefresh={() => loadWeather(state.city)}
+          />
+        )}
+      </main>
+      <footer className="mx-auto w-full max-w-xl border-t border-neutral-200 px-4 pt-2 pb-4 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
+        {/* Atribución exigida por las licencias de Open-Meteo (CC BY 4.0) y GeoNames. */}
+        <p>
+          {t("attribution.weather")}{" "}
+          <a href="https://open-meteo.com/" className="inline-flex min-h-11 min-w-11 items-center underline">
+            {t("attribution.weatherSource")}
+          </a>
+        </p>
+        <p>
+          {t("attribution.locations")}{" "}
+          <a href="https://www.geonames.org/" className="inline-flex min-h-11 min-w-11 items-center underline">
+            {t("attribution.locationsSource")}
+          </a>
+        </p>
+      </footer>
+    </>
   );
 }

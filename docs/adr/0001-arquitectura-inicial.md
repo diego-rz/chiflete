@@ -1,7 +1,7 @@
 # ADR 0001: Arquitectura inicial de Chiflete
 
 - **Estado**: Aceptado
-- **Fecha**: 2026-11-09
+- **Fecha**: 2026-11-09 (actualizado al cerrar la implementación de 001)
 - **Funcionalidad**: [001 Clima actual por ciudad](../../specs/001-city-current-weather/spec.md)
 - **Fuentes**: [plan.md](../../specs/001-city-current-weather/plan.md) y
   [research.md](../../specs/001-city-current-weather/research.md) (R1–R12)
@@ -112,3 +112,28 @@ C4Component
   comerciales. Un uso comercial requerirá su plan de pago y una clave, que deberá suministrarse
   por configuración externa (Principio IV).
 - El despliegue en la nube queda fuera de este ADR y requerirá uno propio.
+
+## Aprendido durante la implementación
+
+- **Spring Boot 4 es modular**: `RestClient` y `spring.http.clients.*` necesitan
+  `spring-boot-starter-restclient`, que no viene con `webmvc`. El código que genera
+  openapi-generator 7.26 exige además `jakarta.validation-api` (solo anotaciones).
+- **Errores del proveedor sin detalles**: `ProviderUnavailableException` y
+  `ProviderTimeoutException` no llevan mensaje ni causa. El mensaje del cliente HTTP incluye la
+  URL, con el texto buscado, y el motivo del proveedor. Un tiempo agotado de conexión o de
+  lectura se traduce a `504 PROVIDER_TIMEOUT`; cualquier otro fallo, a `502 PROVIDER_UNAVAILABLE`.
+- **Plazos**: con una sola llamada al proveedor (1 s de conexión + 3 s de lectura), el backend
+  responde antes del límite de 5 s del frontend. Con el proveedor inaccesible, el usuario ve
+  "Error interno" en algo más de 1 s.
+- **El frontend también traduce sus propios fallos**: si el backend no responde en 5 s o no es
+  accesible, los Route Handlers responden `504`/`502` con los mismos códigos del contrato.
+- **Observabilidad**: una línea ECS por petición (`operation`, `outcome`, `durationMs` y
+  `offset` o coordenadas), escrita por `OperationLog` en la capa de aplicación con la API
+  fluida de SLF4J. Las métricas son las de Actuator (`http.server.requests` por endpoint y
+  estado; `http.client.requests` con la plantilla de URI como etiqueta `uri`).
+- **Healthcheck**: la imagen `eclipse-temurin:25-jre` no trae `curl` ni `wget`; se usa `bash`
+  con `/dev/tcp`.
+- **Pruebas sin red**: el validador de contrato es `openapi-request-validator-mockmvc` (nuevo
+  nombre de `swagger-request-validator-mockmvc`); las pruebas de observabilidad simulan el
+  proveedor con el `HttpServer` del JDK; las E2E usan un backend simulado cuyas respuestas `tsc`
+  verifica contra los tipos del contrato.

@@ -33,5 +33,9 @@
   "cardinal.S": "S",
   "cardinal.SO": "SO",
   "cardinal.O": "O",
-  "cardinal.NO": "NO"
+  "cardinal.NO": "NO",
+  "attribution.weather": "Datos meteorológicos:",
+  "attribution.weatherSource": "Open-Meteo",
+  "attribution.locations": "Ubicaciones:",
+  "attribution.locationsSource": "GeoNames"
 }

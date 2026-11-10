@@ -1,7 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { expectMobileFriendly } from "./mobile";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
+});
+
+// Cada estado de error o aviso se comprueba también a 320 px (Principio VII).
+test.afterEach(async ({ page }) => {
+  await expectMobileFriendly(page);
 });
 
 test("una búsqueda sin coincidencias muestra Sin resultados", async ({ page }) => {
@@ -42,7 +48,6 @@ test("una observación de más de 2 horas muestra la advertencia junto a los dat
   await expect(card.getByText("Datos desactualizados")).toBeVisible();
   await expect(card).toContainText("-52,3 °C");
   await expect(card).toContainText("Hora de observación");
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
 
 test("si falla el clima se muestra Error interno y Actualizar reintenta", async ({ page }) => {

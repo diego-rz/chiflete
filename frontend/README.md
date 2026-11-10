@@ -13,6 +13,23 @@ con este servidor Next.js; sus Route Handlers (`/api/*`) llaman al backend.
 - **Llamadas al backend**: `src/lib/backend-client.ts` lee `BACKEND_URL` en cada petición, corta a
   los 5 s y registra una línea JSON por llamada, sin la query string ni IPs.
 
+## Pantalla y estados
+
+Componentes en `src/components/`: `CitySearch` (cuadro, búsqueda desde 3 caracteres y tandas de
+5), `CityResultList` y `LoadMoreButton`, `CurrentWeatherCard`, `ErrorMessage` y `StaleWarning`.
+`src/lib/use-latest-request.ts` descarta las respuestas fuera de orden.
+
+| Situación | Lo que ve el usuario |
+|-----------|----------------------|
+| Búsqueda sin coincidencias | "Sin resultados" |
+| Fallo o tiempo agotado al buscar u obtener el clima | "Error interno", sin datos; se reintenta escribiendo de nuevo o con "Actualizar" |
+| Fallo al cargar más resultados | Se conservan los mostrados, "Error interno" debajo y el botón disponible |
+| Dato no informado por el proveedor | "-" (un 0 se muestra como 0 con su unidad) |
+| Observación de más de 2 horas | "Datos desactualizados" junto a los datos y la hora |
+
+Al pie se muestra la atribución que exigen las licencias de Open-Meteo (CC BY 4.0) y GeoNames.
+La página no guarda nada en el navegador: ni cookies ni `localStorage`.
+
 ## Construir y ejecutar
 
 Requisitos: Node.js 24 LTS.
@@ -40,7 +57,9 @@ npm test                          # tsc + Vitest + Playwright; o, desde la raíz
 - `tsc --noEmit`: tipos, incluidas las claves del catálogo y las respuestas simuladas.
 - Vitest + React Testing Library (`tests/unit/`).
 - Playwright a 320 × 640 (`tests/e2e/`), contra el servidor standalone compilado y un backend
-  simulado (`tests/e2e/mock-backend.mts`), sin red. Las respuestas simuladas se tipan con los
+  simulado (`tests/e2e/mock-backend.mts`), sin red. Cada spec comprueba con
+  `tests/e2e/mobile.ts` que no hay scroll horizontal y que todo elemento interactivo mide al
+  menos 44 × 44 px. Las respuestas simuladas se tipan con los
   tipos del contrato (`satisfies`), así que `tsc` falla si dejan de cumplirlo.
 
 ## Configuración
