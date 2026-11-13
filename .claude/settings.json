@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make test:*)",
+      "Bash(make test-backend:*)",
+      "Bash(make test-frontend:*)",
+      "Bash(make generate:*)",
+      "Bash(./mvnw verify:*)",
+      "Bash(./mvnw -B verify:*)",
+      "Bash(./mvnw test:*)",
+      "Bash(./mvnw -B test:*)",
+      "Bash(./mvnw generate-sources:*)",
+      "Bash(./mvnw -B -q generate-sources:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:unit:*)",
+      "Bash(npm run test:e2e:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run generate:api:*)",
+      "Bash(npx tsc --noEmit:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ]
+  }
+}
