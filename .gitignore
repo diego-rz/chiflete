@@ -1,0 +1,23 @@
+# Universal
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.log
+.env*
+.vscode/
+.idea/
+
+# Java / Maven
+backend/target/
+*.class
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+frontend/next-env.d.ts
+*.tsbuildinfo
